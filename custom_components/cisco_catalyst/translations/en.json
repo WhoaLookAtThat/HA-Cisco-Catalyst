@@ -1,0 +1,89 @@
+{
+  "title": "Cisco Catalyst",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Cisco Catalyst",
+        "description": "Configure SNMP access to the switch. Choose the credential access level below so Home Assistant knows whether configuration controls should be allowed.",
+        "data": {
+          "host": "Switch host or IP address",
+          "snmp_port": "SNMP port",
+          "read_community": "Read community",
+          "write_community": "Write community",
+          "snmp_version": "SNMP version",
+          "snmp_username": "SNMPv3 username",
+          "snmp_auth_protocol": "SNMPv3 authentication protocol",
+          "snmp_auth_key": "SNMPv3 authentication key",
+          "snmp_priv_protocol": "SNMPv3 privacy protocol",
+          "snmp_priv_key": "SNMPv3 privacy key",
+          "credential_access": "Credential access"
+        },
+        "data_description": {
+          "read_community": "SNMPv2c community used for polling.",
+          "write_community": "SNMPv2c community used for supported SET operations. Required when Credential access is Read/write and SNMP version is 2c.",
+          "snmp_version": "Choose 2c for community-based access or 3 for authenticated and encrypted USM access.",
+          "snmp_username": "Required for SNMPv3 authPriv. The Cisco user's group permissions must match the declared Credential access.",
+          "snmp_auth_key": "Required for SNMPv3 authPriv.",
+          "snmp_priv_key": "Required for SNMPv3 authPriv.",
+          "credential_access": "Tell Home Assistant whether these credentials are effectively read-only or read/write on the switch. Home Assistant can verify reads safely, but it does not issue a test SET just to discover write permission because that would modify switch state. Choose Read/write only when the configured SNMPv2c community or SNMPv3 user is permitted to perform SET operations. Saving Read-only clears any saved SNMPv2c write community and inactive SNMPv3 credentials. Switching SNMP versions also clears credentials for the inactive version, so you will need to enter them again if you switch back."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Cisco Catalyst",
+        "description": "Update the switch connection, credentials, or declared access level. Settings are read-validated before the existing entry reloads.",
+        "data": {
+          "host": "Switch host or IP address",
+          "snmp_port": "SNMP port",
+          "read_community": "Read community",
+          "write_community": "Write community",
+          "snmp_version": "SNMP version",
+          "snmp_username": "SNMPv3 username",
+          "snmp_auth_protocol": "SNMPv3 authentication protocol",
+          "snmp_auth_key": "SNMPv3 authentication key",
+          "snmp_priv_protocol": "SNMPv3 privacy protocol",
+          "snmp_priv_key": "SNMPv3 privacy key",
+          "credential_access": "Credential access"
+        },
+        "data_description": {
+          "read_community": "SNMPv2c community used for polling.",
+          "write_community": "SNMPv2c community used for supported SET operations. Required when Credential access is Read/write and SNMP version is 2c.",
+          "snmp_version": "Choose 2c for community-based access or 3 for authenticated and encrypted USM access.",
+          "snmp_username": "Required for SNMPv3 authPriv. The Cisco user's group permissions must match the declared Credential access.",
+          "snmp_auth_key": "Required for SNMPv3 authPriv.",
+          "snmp_priv_key": "Required for SNMPv3 authPriv.",
+          "credential_access": "Tell Home Assistant whether these credentials are effectively read-only or read/write on the switch. Home Assistant can verify reads safely, but it does not issue a test SET just to discover write permission because that would modify switch state. Choose Read/write only when the configured SNMPv2c community or SNMPv3 user is permitted to perform SET operations. Saving Read-only clears any saved SNMPv2c write community and inactive SNMPv3 credentials. Switching SNMP versions also clears credentials for the inactive version, so you will need to enter them again if you switch back."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to communicate with the switch using the supplied SNMP settings.",
+      "write_community_required": "A write community is required when Credential access is Read/write with SNMPv2c.",
+      "read_community_required": "A read community is required for SNMPv2c.",
+      "username_required": "An SNMPv3 username is required.",
+      "auth_key_required": "An SNMPv3 authentication key is required.",
+      "priv_key_required": "An SNMPv3 privacy key is required."
+    },
+    "abort": {
+      "already_configured": "This switch is already configured.",
+      "reconfigure_successful": "Cisco Catalyst configuration updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cisco Catalyst options",
+        "description": "Choose how often Home Assistant automatically reconciles data with the switch. Use Refresh data on the device for an immediate read-only update.",
+        "data": {
+          "scan_interval": "Polling interval (seconds)",
+          "trap_enabled": "Receive SNMP traps/informs",
+          "trap_port": "Trap/inform UDP listen port"
+        },
+        "data_description": {
+          "scan_interval": "Automatic polling interval from 30 to 3600 seconds. Default: 300 seconds (5 minutes).",
+          "trap_enabled": "When enabled, notifications trigger an immediate authoritative SNMP refresh and a Home Assistant event.",
+          "trap_port": "UDP port to listen on. Default 1162 avoids requiring privileged port 162."
+        }
+      }
+    }
+  }
+}
