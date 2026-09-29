@@ -239,12 +239,6 @@ The Catalyst 3650 has had historical Cisco IOS XE bugs involving PoE SNMP/entity
 
 For the first write test on a new switch/model/software combination, use a deliberately chosen non-critical port. Change only its description first, verify the corresponding IOS `description`, then restore it. After that, test Ethernet administrative state and PoE only on a port whose attached device can safely be disconnected or power-cycled. Avoid testing against the Home Assistant host's own network path or any switch uplink.
 
-## Remaining before 0.1 release
-
-- Complete the final release-readiness review of the development branch and Draft PR.
-- Choose and add a project license before publishing the first general-use release.
-- Protect the `main` branch with a repository ruleset (tracked separately as a GitHub issue).
-
 ## License
 
 This project is licensed under the MIT License. See `LICENSE`.
