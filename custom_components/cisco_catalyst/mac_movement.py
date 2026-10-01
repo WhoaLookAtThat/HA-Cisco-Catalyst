@@ -69,17 +69,30 @@ class MacMovementTracker:
         """Classify only from explicit switch facts, never model/name heuristics."""
         if interface.is_trunk is True or interface.cdp_neighbors or interface.lldp_neighbors:
             return "infrastructure"
-        if interface.is_trunk is False:
+        if interface.is_trunk is False and len(interface.mac_addresses) <= 1:
             return "edge"
         return "unknown"
 
     def observe(self, data: CatalystData, *, now: datetime | None = None) -> list[MacMovement]:
         """Observe one authoritative coordinator snapshot and return confirmed moves."""
         observed_at = now or datetime.now(timezone.utc)
-        current: dict[str, int] = {}
+
+        # Do not pick an arbitrary port if the same MAC is simultaneously visible
+        # through multiple physical interfaces in one snapshot. That can happen
+        # transiently while switch tables converge and is not enough evidence of a
+        # real movement.
+        observed_ports: dict[str, set[int]] = defaultdict(set)
         for if_index, interface in data.interfaces.items():
             for mac in interface.mac_addresses:
-                current[mac] = if_index
+                observed_ports[mac].add(if_index)
+        current = {
+            mac: next(iter(if_indexes))
+            for mac, if_indexes in observed_ports.items()
+            if len(if_indexes) == 1
+        }
+        for mac, if_indexes in observed_ports.items():
+            if len(if_indexes) > 1:
+                self._candidates.pop(mac, None)
 
         movements: list[MacMovement] = []
         for mac, new_if_index in current.items():
