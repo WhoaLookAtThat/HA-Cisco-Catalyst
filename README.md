@@ -96,6 +96,8 @@ Configuration-related entities keep their normal Home Assistant entity types so 
 
 If Credential access is **Read-only**, attempts to use those controls are rejected by the integration before any SNMP SET is sent. Reconfigure the entry as **Read/write** only after the switch credentials actually permit writes.
 
+**Expected Home Assistant UI behavior:** those switch/text entities may still look editable or interactive even when Credential access is **Read-only**. The integration intentionally keeps their normal entity types so the current observed state remains visible and stable. In read-only mode, an attempted change is rejected locally before any SNMP SET is sent. A control looking interactive therefore does **not** mean that write access is enabled.
+
 SNMP-specific details:
 
 - **SNMPv2c:** polling uses the configured read community and supported SET operations use the configured write community. Selecting Read/write requires both a nonblank read community and a nonblank write community. Selecting **Read-only** deliberately clears any saved write community and any saved SNMPv3 credentials when the form is submitted. This prevents inactive write credentials or credentials from another SNMP version from remaining stored. If you later switch back to Read/write or SNMPv3, you must enter those credentials again. A nonblank write community still does not prove that Cisco grants SET permission, so the declaration must match the switch configuration.
