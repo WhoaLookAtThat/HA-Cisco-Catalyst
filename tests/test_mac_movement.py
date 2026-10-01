@@ -79,6 +79,29 @@ def test_disappearance_and_reappearance_same_port_is_not_movement() -> None:
     bus.async_fire.assert_not_called()
 
 
+def test_same_mac_on_multiple_ports_is_ignored_as_ambiguous() -> None:
+    tracker, bus = _tracker()
+    mac = "00:11:22:33:44:55"
+
+    tracker.observe(_data(_port(1, [mac]), _port(2, [])))
+    tracker.observe(_data(_port(1, [mac]), _port(2, [mac])))
+    tracker.observe(_data(_port(1, []), _port(2, [mac])))
+
+    bus.async_fire.assert_not_called()
+
+
+def test_multi_mac_access_path_is_unknown_not_edge() -> None:
+    tracker, _bus = _tracker()
+    interface = _port(1, ["00:11:22:33:44:55", "00:11:22:33:44:66"])
+    assert tracker.classify_path(interface) == "unknown"
+
+
+def test_neighbor_marks_access_port_as_infrastructure() -> None:
+    tracker, _bus = _tracker()
+    interface = _port(1, ["00:11:22:33:44:55"], neighbor=True)
+    assert tracker.classify_path(interface) == "infrastructure"
+
+
 def test_infrastructure_path_change_does_not_build_edge_anomaly_history() -> None:
     tracker, bus = _tracker()
     mac = "00:11:22:33:44:55"
