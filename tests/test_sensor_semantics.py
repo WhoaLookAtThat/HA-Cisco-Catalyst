@@ -15,6 +15,7 @@ from custom_components.cisco_catalyst.coordinator import (
 from custom_components.cisco_catalyst.sensor import (
     CatalystCounterSensor,
     CatalystFruStatusSensor,
+    CatalystMacMovementAnomalySensor,
     CatalystSpeedSensor,
     CatalystUptimeSensor,
 )
@@ -113,6 +114,32 @@ def test_uptime_remains_native_seconds() -> None:
 def test_fru_status_is_human_readable() -> None:
     sensor = CatalystFruStatusSensor(_coordinator(_data()), 10, "power")
     assert sensor.native_value == "Off (environment/other)"
+
+
+def test_mac_movement_anomaly_sensor_exposes_bounded_tracker_state() -> None:
+    coordinator = _coordinator(_data())
+    coordinator.mac_movement_tracker = SimpleNamespace(
+        anomaly_count=2,
+        recent_anomalies=[
+            {
+                "mac": "00:11:22:33:44:55",
+                "old_interface": "GigabitEthernet1/0/1",
+                "new_interface": "GigabitEthernet1/0/2",
+            }
+        ],
+    )
+    sensor = CatalystMacMovementAnomalySensor(coordinator)
+    assert sensor.native_value == 2
+    assert sensor.extra_state_attributes == {
+        "history_scope": "coordinator_lifetime",
+        "recent_anomalies": [
+            {
+                "mac": "00:11:22:33:44:55",
+                "old_interface": "GigabitEthernet1/0/1",
+                "new_interface": "GigabitEthernet1/0/2",
+            }
+        ],
+    }
 
 
 def test_interface_entities_attach_to_child_port_device() -> None:
