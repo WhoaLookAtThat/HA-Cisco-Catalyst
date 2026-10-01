@@ -28,6 +28,7 @@ async def async_setup_entry(
         CatalystPoePowerSensor(coordinator),
         CatalystCpuSensor(coordinator),
         CatalystMemorySensor(coordinator),
+        CatalystMacMovementAnomalySensor(coordinator),
     ]
     entities.extend(
         CatalystTemperatureSensor(coordinator, idx)
@@ -151,6 +152,33 @@ class CatalystMemorySensor(CatalystEntity, SensorEntity):
             "free_bytes": memory.free_bytes,
             "total_bytes": memory.total_bytes,
             "largest_free_bytes": memory.largest_free_bytes,
+        }
+
+
+class CatalystMacMovementAnomalySensor(CatalystEntity, SensorEntity):
+    """Expose bounded MAC movement anomaly diagnostics for this integration run."""
+
+    _attr_name = "MAC movement anomalies"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"recent_anomalies"})
+
+    def __init__(self, coordinator: CatalystCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.client.host}_mac_movement_anomalies"
+
+    @property
+    def native_value(self) -> int:
+        tracker = getattr(self.coordinator, "mac_movement_tracker", None)
+        return 0 if tracker is None else tracker.anomaly_count
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        tracker = getattr(self.coordinator, "mac_movement_tracker", None)
+        if tracker is None:
+            return {"history_scope": "coordinator_lifetime", "recent_anomalies": []}
+        return {
+            "history_scope": "coordinator_lifetime",
+            "recent_anomalies": list(tracker.recent_anomalies),
         }
 
 
