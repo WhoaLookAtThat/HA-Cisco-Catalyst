@@ -33,6 +33,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import CatalystCoordinator
+from .mac_movement import MacMovementTracker
 from .snmp import CatalystSnmpClient
 from .trap import CatalystTrapReceiver
 
@@ -79,6 +80,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: CatalystConfigEntry) -> 
         ),
     )
     await coordinator.async_config_entry_first_refresh()
+
+    mac_tracker = MacMovementTracker(hass, client.host)
+    mac_tracker.observe(coordinator.data)
+    coordinator.mac_movement_tracker = mac_tracker
+    coordinator.mac_movement_remove_listener = coordinator.async_add_listener(
+        lambda: mac_tracker.observe(coordinator.data)
+    )
+
     entry.runtime_data = coordinator
     if entry.options.get(CONF_TRAP_ENABLED, False):
         trap_receiver = CatalystTrapReceiver(
@@ -106,6 +115,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: CatalystConfigEntry) ->
         )
         return False
 
+    remove_listener = getattr(entry.runtime_data, "mac_movement_remove_listener", None)
+    if remove_listener is not None:
+        remove_listener()
     trap_receiver = getattr(entry.runtime_data, "trap_receiver", None)
     if trap_receiver is not None:
         trap_receiver.close()
