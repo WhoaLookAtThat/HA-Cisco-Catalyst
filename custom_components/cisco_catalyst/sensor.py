@@ -156,11 +156,11 @@ class CatalystMemorySensor(CatalystEntity, SensorEntity):
 
 
 class CatalystMacMovementAnomalySensor(CatalystEntity, SensorEntity):
-    """Expose bounded MAC movement anomaly diagnostics for this integration run."""
+    """Expose bounded MAC movement and anomaly diagnostics for this integration run."""
 
     _attr_name = "MAC movement anomalies"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _unrecorded_attributes = frozenset({"recent_anomalies"})
+    _unrecorded_attributes = frozenset({"recent_movements", "recent_anomalies"})
 
     def __init__(self, coordinator: CatalystCoordinator) -> None:
         super().__init__(coordinator)
@@ -175,9 +175,14 @@ class CatalystMacMovementAnomalySensor(CatalystEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         tracker = getattr(self.coordinator, "mac_movement_tracker", None)
         if tracker is None:
-            return {"history_scope": "coordinator_lifetime", "recent_anomalies": []}
+            return {
+                "history_scope": "coordinator_lifetime",
+                "recent_movements": [],
+                "recent_anomalies": [],
+            }
         return {
             "history_scope": "coordinator_lifetime",
+            "recent_movements": list(tracker.recent_movements),
             "recent_anomalies": list(tracker.recent_anomalies),
         }
 
