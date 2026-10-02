@@ -156,7 +156,7 @@ def test_mac_movement_anomaly_sensor_exposes_bounded_tracker_state() -> None:
             }
         ],
     }
-    assert sensor.unrecorded_attributes == frozenset(
+    assert CatalystMacMovementAnomalySensor._unrecorded_attributes == frozenset(
         {"recent_movements", "recent_anomalies"}
     )
 
