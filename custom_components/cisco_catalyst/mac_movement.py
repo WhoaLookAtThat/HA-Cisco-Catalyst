@@ -17,6 +17,7 @@ EVENT_MAC_ANOMALY = "cisco_catalyst_mac_anomaly"
 _CONFIRM_POLLS = 2
 _ANOMALY_WINDOW = timedelta(minutes=5)
 _ANOMALY_THRESHOLD = 3
+_MAX_RECENT_MOVEMENTS = 20
 _MAX_RECENT_ANOMALIES = 10
 
 
@@ -62,12 +63,19 @@ class MacMovementTracker:
         self._candidates: dict[str, tuple[int, int]] = {}
         self._edge_history: dict[str, deque[datetime]] = defaultdict(deque)
         self.anomaly_count = 0
+        self.recent_movements: deque[dict[str, Any]] = deque(maxlen=_MAX_RECENT_MOVEMENTS)
         self.recent_anomalies: deque[dict[str, Any]] = deque(maxlen=_MAX_RECENT_ANOMALIES)
 
     @staticmethod
     def classify_path(interface: InterfaceData) -> str:
         """Classify only from explicit switch facts, never model/name heuristics."""
         if interface.is_trunk is True or interface.cdp_neighbors or interface.lldp_neighbors:
+            return "infrastructure"
+        if interface.is_trunk is False and len(interface.mac_addresses) > 1:
+            # Multiple learned MACs on an explicitly non-trunk port are evidence of
+            # a downstream path (for example an AP, unmanaged switch, phone/PC, or
+            # bridge). Treat it as infrastructure for anomaly suppression without
+            # claiming what device type is actually connected.
             return "infrastructure"
         if interface.is_trunk is False and len(interface.mac_addresses) <= 1:
             return "edge"
@@ -156,6 +164,7 @@ class MacMovementTracker:
             )
             movements.append(movement)
             event_data = movement.as_event_data(self.switch_host)
+            self.recent_movements.append(event_data)
             self.hass.bus.async_fire(EVENT_MAC_MOVEMENT, event_data)
             if anomaly:
                 self.anomaly_count += 1
