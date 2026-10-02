@@ -66,6 +66,10 @@ def test_move_requires_two_consecutive_observations() -> None:
     assert movements[0].anomaly is False
     bus.async_fire.assert_called_once()
     assert bus.async_fire.call_args.args[0] == EVENT_MAC_MOVEMENT
+    assert len(tracker.recent_movements) == 1
+    assert tracker.recent_movements[0]["mac"] == mac
+    assert tracker.recent_movements[0]["old_interface"] == "GigabitEthernet1/0/1"
+    assert tracker.recent_movements[0]["new_interface"] == "GigabitEthernet1/0/2"
 
 
 def test_disappearance_and_reappearance_same_port_is_not_movement() -> None:
@@ -90,9 +94,19 @@ def test_same_mac_on_multiple_ports_is_ignored_as_ambiguous() -> None:
     bus.async_fire.assert_not_called()
 
 
-def test_multi_mac_access_path_is_unknown_not_edge() -> None:
+def test_multi_mac_access_path_is_infrastructure_not_edge() -> None:
     tracker, _bus = _tracker()
     interface = _port(1, ["00:11:22:33:44:55", "00:11:22:33:44:66"])
+    assert tracker.classify_path(interface) == "infrastructure"
+
+
+def test_multi_mac_path_with_unknown_trunk_state_remains_unknown() -> None:
+    tracker, _bus = _tracker()
+    interface = _port(
+        1,
+        ["00:11:22:33:44:55", "00:11:22:33:44:66"],
+        trunk=None,
+    )
     assert tracker.classify_path(interface) == "unknown"
 
 
@@ -147,9 +161,32 @@ def test_three_confirmed_edge_moves_within_window_raise_anomaly() -> None:
     assert movements[0].edge_move_count == 3
     assert movements[0].anomaly is True
     assert tracker.anomaly_count == 1
+    assert len(tracker.recent_movements) == 3
+    assert len(tracker.recent_anomalies) == 1
     anomaly_calls = [call for call in bus.async_fire.call_args_list if call.args[0] == EVENT_MAC_ANOMALY]
     assert len(anomaly_calls) == 1
     assert anomaly_calls[0].args[1]["mac"] == mac
+
+
+def test_recent_movements_are_bounded() -> None:
+    tracker, _bus = _tracker()
+    now = datetime(2026, 10, 1, tzinfo=timezone.utc)
+
+    for suffix in range(25):
+        mac = f"00:11:22:33:44:{suffix:02x}"
+        tracker.observe(_data(_port(1, [mac]), _port(2, [])), now=now)
+        tracker.observe(
+            _data(_port(1, []), _port(2, [mac])),
+            now=now + timedelta(seconds=1),
+        )
+        tracker.observe(
+            _data(_port(1, []), _port(2, [mac])),
+            now=now + timedelta(seconds=2),
+        )
+
+    assert len(tracker.recent_movements) == 20
+    assert tracker.recent_movements[0]["mac"] == "00:11:22:33:44:05"
+    assert tracker.recent_movements[-1]["mac"] == "00:11:22:33:44:18"
 
 
 def test_edge_move_window_expires() -> None:
