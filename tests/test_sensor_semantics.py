@@ -120,6 +120,14 @@ def test_mac_movement_anomaly_sensor_exposes_bounded_tracker_state() -> None:
     coordinator = _coordinator(_data())
     coordinator.mac_movement_tracker = SimpleNamespace(
         anomaly_count=2,
+        recent_movements=[
+            {
+                "mac": "00:11:22:33:44:66",
+                "old_interface": "GigabitEthernet1/0/3",
+                "new_interface": "GigabitEthernet1/0/4",
+                "anomaly": False,
+            }
+        ],
         recent_anomalies=[
             {
                 "mac": "00:11:22:33:44:55",
@@ -132,6 +140,14 @@ def test_mac_movement_anomaly_sensor_exposes_bounded_tracker_state() -> None:
     assert sensor.native_value == 2
     assert sensor.extra_state_attributes == {
         "history_scope": "coordinator_lifetime",
+        "recent_movements": [
+            {
+                "mac": "00:11:22:33:44:66",
+                "old_interface": "GigabitEthernet1/0/3",
+                "new_interface": "GigabitEthernet1/0/4",
+                "anomaly": False,
+            }
+        ],
         "recent_anomalies": [
             {
                 "mac": "00:11:22:33:44:55",
@@ -139,6 +155,19 @@ def test_mac_movement_anomaly_sensor_exposes_bounded_tracker_state() -> None:
                 "new_interface": "GigabitEthernet1/0/2",
             }
         ],
+    }
+    assert sensor.unrecorded_attributes == frozenset(
+        {"recent_movements", "recent_anomalies"}
+    )
+
+
+def test_mac_movement_anomaly_sensor_handles_tracker_not_initialized() -> None:
+    sensor = CatalystMacMovementAnomalySensor(_coordinator(_data()))
+    assert sensor.native_value == 0
+    assert sensor.extra_state_attributes == {
+        "history_scope": "coordinator_lifetime",
+        "recent_movements": [],
+        "recent_anomalies": [],
     }
 
 
