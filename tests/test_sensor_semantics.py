@@ -1,0 +1,245 @@
+"""Regression tests for sensor semantics validated on the Catalyst 3650."""
+
+from __future__ import annotations
+
+from types import SimpleNamespace
+from typing import Any
+
+from homeassistant.components.sensor import SensorStateClass
+
+from custom_components.cisco_catalyst.coordinator import (
+    CatalystData,
+    FruStatusData,
+    InterfaceData,
+    PoePortData,
+)
+from custom_components.cisco_catalyst.sensor import (
+    CatalystCounterSensor,
+    CatalystDiscardSensor,
+    CatalystFruStatusSensor,
+    CatalystMacMovementAnomalySensor,
+    CatalystPoePortPowerSensor,
+    CatalystSnmpStatusSensor,
+    CatalystSpeedSensor,
+    CatalystUptimeSensor,
+)
+
+
+def _coordinator(data: CatalystData) -> Any:
+    return SimpleNamespace(
+        data=data,
+        client=SimpleNamespace(host="192.0.2.1"),
+        last_update_success=True,
+    )
+
+
+def _data(*, oper_status: int = 1, speed_mbps: int = 1000, admin_status: int | None = 1) -> CatalystData:
+    return CatalystData(
+        sys_name="test-switch",
+        sys_descr="Cisco IOS",
+        uptime_ticks=4_669_996,
+        interfaces={
+            1: InterfaceData(
+                if_index=1,
+                name="GigabitEthernet1/0/1",
+                oper_status=oper_status,
+                admin_status=admin_status,
+                speed_mbps=speed_mbps,
+                in_octets=12_967_977_902,
+                out_octets=17_556_163_198,
+            )
+        },
+        poe_ports={},
+        power_supplies={
+            10: FruStatusData(
+                ent_index=10,
+                name="Switch 1 - Power Supply B",
+                status=1,
+            )
+        },
+    )
+
+
+def test_counter_keeps_exact_byte_semantics() -> None:
+    sensor = CatalystCounterSensor(_coordinator(_data()), 1, "tx")
+    assert sensor.native_value == 17_556_163_198
+    assert sensor.native_unit_of_measurement == "B"
+    assert sensor.state_class is SensorStateClass.TOTAL_INCREASING
+    assert sensor.device_class is None
+
+
+def test_speed_explains_when_link_is_down() -> None:
+    sensor = CatalystSpeedSensor(_coordinator(_data(oper_status=2)), 1)
+    assert sensor.native_value == "N/A (port down)"
+
+
+def test_speed_explains_when_port_is_disabled() -> None:
+    sensor = CatalystSpeedSensor(_coordinator(_data(oper_status=2, admin_status=2)), 1)
+    assert sensor.native_value == "N/A (port disabled)"
+
+
+def test_speed_missing_admin_status_is_not_disabled() -> None:
+    sensor = CatalystSpeedSensor(_coordinator(_data(admin_status=None)), 1)
+    assert sensor.native_value == "1G"
+
+
+def test_speed_reported_when_link_is_up() -> None:
+    sensor = CatalystSpeedSensor(_coordinator(_data()), 1)
+    assert sensor.native_value == "1G"
+    assert sensor.native_unit_of_measurement is None
+
+
+def test_speed_formats_current_catalyst_rates() -> None:
+    expected = {
+        10: "10M",
+        100: "100M",
+        1000: "1G",
+        2500: "2.5G",
+        5000: "5G",
+        10000: "10G",
+        25000: "25G",
+        40000: "40G",
+        50000: "50G",
+        100000: "100G",
+        200000: "200G",
+        400000: "400G",
+    }
+    for speed_mbps, label in expected.items():
+        sensor = CatalystSpeedSensor(_coordinator(_data(speed_mbps=speed_mbps)), 1)
+        assert sensor.native_value == label
+
+
+def test_uptime_remains_native_seconds() -> None:
+    sensor = CatalystUptimeSensor(_coordinator(_data()))
+    assert sensor.native_value == 46_699.96
+    assert sensor.native_unit_of_measurement == "s"
+
+
+def test_fru_status_is_human_readable() -> None:
+    sensor = CatalystFruStatusSensor(_coordinator(_data()), 10, "power")
+    assert sensor.native_value == "Off (environment/other)"
+
+
+def test_mac_movement_anomaly_sensor_exposes_bounded_tracker_state() -> None:
+    coordinator = _coordinator(_data())
+    coordinator.mac_movement_tracker = SimpleNamespace(
+        anomaly_count=2,
+        recent_movements=[
+            {
+                "mac": "00:11:22:33:44:66",
+                "old_interface": "GigabitEthernet1/0/3",
+                "new_interface": "GigabitEthernet1/0/4",
+                "anomaly": False,
+            }
+        ],
+        recent_anomalies=[
+            {
+                "mac": "00:11:22:33:44:55",
+                "old_interface": "GigabitEthernet1/0/1",
+                "new_interface": "GigabitEthernet1/0/2",
+            }
+        ],
+    )
+    sensor = CatalystMacMovementAnomalySensor(coordinator)
+    assert sensor.native_value == 2
+    assert sensor.extra_state_attributes == {
+        "history_scope": "coordinator_lifetime",
+        "recent_movements": [
+            {
+                "mac": "00:11:22:33:44:66",
+                "old_interface": "GigabitEthernet1/0/3",
+                "new_interface": "GigabitEthernet1/0/4",
+                "anomaly": False,
+            }
+        ],
+        "recent_anomalies": [
+            {
+                "mac": "00:11:22:33:44:55",
+                "old_interface": "GigabitEthernet1/0/1",
+                "new_interface": "GigabitEthernet1/0/2",
+            }
+        ],
+    }
+    assert CatalystMacMovementAnomalySensor._unrecorded_attributes == frozenset(
+        {"recent_movements", "recent_anomalies"}
+    )
+
+
+def test_mac_movement_anomaly_sensor_handles_tracker_not_initialized() -> None:
+    sensor = CatalystMacMovementAnomalySensor(_coordinator(_data()))
+    assert sensor.native_value == 0
+    assert sensor.extra_state_attributes == {
+        "history_scope": "coordinator_lifetime",
+        "recent_movements": [],
+        "recent_anomalies": [],
+    }
+
+
+def test_interface_entities_attach_to_child_port_device() -> None:
+    coordinator = _coordinator(_data())
+    sensor = CatalystSpeedSensor(coordinator, 1)
+    info = sensor.device_info
+    assert info["identifiers"] == {
+        ("cisco_catalyst", "192.0.2.1:interface:1")
+    }
+    assert info["via_device"] == ("cisco_catalyst", "192.0.2.1")
+    assert info["name"] == "GigabitEthernet1/0/1"
+
+
+def test_snmp_status_sensor_exposes_mode_and_listener_without_credentials() -> None:
+    coordinator = _coordinator(_data())
+    coordinator.client.version = "3"
+    coordinator.snmp_mode = "3 (authPriv)"
+    coordinator.notification_listener_enabled = True
+    coordinator.notification_listener_port = 1162
+
+    sensor = CatalystSnmpStatusSensor(coordinator)
+
+    assert sensor.native_value == "3 (authPriv)"
+    assert sensor.extra_state_attributes == {
+        "notification_listener": "enabled",
+        "notification_listener_port": 1162,
+        "notification_listener_transport": "UDP",
+    }
+    assert "username" not in sensor.extra_state_attributes
+    assert "community" not in sensor.extra_state_attributes
+    assert "auth_key" not in sensor.extra_state_attributes
+    assert "priv_key" not in sensor.extra_state_attributes
+
+
+def test_native_port_diagnostics_attach_to_same_child_device() -> None:
+    data = _data()
+    data.interfaces[1].in_discards = 7
+    data.interfaces[1].out_discards = 9
+    data.poe_ports["1.1"] = PoePortData(
+        index="1.1",
+        name="GigabitEthernet1/0/1",
+        enabled=True,
+        device_detected=True,
+        power_consumption_mw=2345,
+        power_allocated_mw=4000,
+        power_available_mw=30000,
+        max_power_drawn_mw=5100,
+    )
+    coordinator = _coordinator(data)
+
+    rx_discards = CatalystDiscardSensor(coordinator, 1, "rx")
+    tx_discards = CatalystDiscardSensor(coordinator, 1, "tx")
+    poe_power = CatalystPoePortPowerSensor(coordinator, "1.1")
+
+    expected_identifiers = {
+        ("cisco_catalyst", "192.0.2.1:interface:1")
+    }
+    assert rx_discards.native_value == 7
+    assert tx_discards.native_value == 9
+    assert poe_power.native_value == 2.345
+    assert rx_discards.device_info["identifiers"] == expected_identifiers
+    assert tx_discards.device_info["identifiers"] == expected_identifiers
+    assert poe_power.device_info["identifiers"] == expected_identifiers
+    assert poe_power.extra_state_attributes == {
+        "poe_enabled": True,
+        "powered_device_detected": True,
+        "allocated_power_w": 4.0,
+        "available_power_w": 30.0,
+        "max_power_drawn_w": 5.1,
+    }
