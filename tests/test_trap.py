@@ -391,12 +391,12 @@ def test_mac_move_notification_is_only_a_hint_and_requests_refresh() -> None:
         bridge_port_ifindex={5: 51, 6: 12},
         interfaces={
             51: SimpleNamespace(
-                name="GigabitEthernet1/0/44",
-                description="Downstream infrastructure A",
+                name="GigabitEthernet1/0/17",
+                description="Synthetic downstream A",
             ),
             12: SimpleNamespace(
                 name="GigabitEthernet1/0/5",
-                description="Downstream infrastructure B",
+                description="Synthetic downstream B",
             ),
         },
     )
@@ -423,11 +423,11 @@ def test_mac_move_notification_is_only_a_hint_and_requests_refresh() -> None:
     assert payload["from_bridge_port"] == 5
     assert payload["to_bridge_port"] == 6
     assert payload["from_if_index"] == 51
-    assert payload["from_interface"] == "GigabitEthernet1/0/44"
-    assert payload["from_interface_description"] == "Downstream infrastructure A"
+    assert payload["from_interface"] == "GigabitEthernet1/0/17"
+    assert payload["from_interface_description"] == "Synthetic downstream A"
     assert payload["to_if_index"] == 12
     assert payload["to_interface"] == "GigabitEthernet1/0/5"
-    assert payload["to_interface_description"] == "Downstream infrastructure B"
+    assert payload["to_interface_description"] == "Synthetic downstream B"
     assert len(tasks) == 1
     tasks[0].close()
 
