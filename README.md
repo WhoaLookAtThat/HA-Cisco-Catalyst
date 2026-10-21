@@ -122,7 +122,7 @@ The setup and Reconfigure forms visually separate **SNMPv2c credentials** from *
 
 ## Installation
 
-There are two installation methods. **HACS is the easier method once this repository has a usable release.** Manual installation is useful during development and testing.
+There are two installation methods. **HACS (through Home Assistant 2026.10) or the built-in Marketplace (Home Assistant 2026.11 onward)** is the easier method once this repository has a usable release. Manual installation is useful during development and testing.
 
 ### Manual installation
 
@@ -195,17 +195,19 @@ If you originally installed Cisco Catalyst manually, update it by replacing the 
 7. After the restart, open **Settings → System → Logs** and check for `cisco_catalyst` import, setup, or migration errors.
 8. Open **Settings → Devices & services → Cisco Catalyst** and confirm the integration and entities still load as expected.
 
-Do not mix manual and HACS installation methods for the same integration. If the integration was installed manually, continue updating it manually unless you intentionally migrate to HACS later.
+Do not mix manual and HACS/Marketplace installation methods for the same integration. If installed manually, continue updating manually unless you intentionally migrate to the store later.
 
-### HACS installation
+### HACS / Marketplace installation
 
-HACS (Home Assistant Community Store) can download and update custom integrations for Home Assistant. In these instructions, **"the repository" means this GitHub repository: `WhoaLookAtThat/HA-Cisco-Catalyst`**.
+For **Home Assistant 2026.10 or earlier**, use the HACS (Home Assistant Community Store) interface. Starting with **Home Assistant 2026.11**, HACS is built into Home Assistant as **Marketplace**, accessible under **Settings → Marketplace**; no separate HACS installation is needed. Existing HACS repositories and custom repositories migrate on upgrade. See the [official Marketplace migration guidance](https://hacs.netlify.app/docs/marketplace/).
 
-This repository is intended to be installed through HACS as a **custom repository** unless/until it is accepted into HACS's default catalog:
+HACS/Marketplace can download and update custom integrations for Home Assistant. In these instructions, **"the repository" means this GitHub repository: `WhoaLookAtThat/HA-Cisco-Catalyst`**.
 
-1. Make sure HACS is already installed and configured in Home Assistant.
-2. Open **HACS** in Home Assistant.
-3. Open the HACS menu and choose **Custom repositories**. Depending on the HACS frontend version, this is normally under the three-dot menu.
+This repository can be installed as a **custom repository** unless/until it is accepted into the shared HACS/Marketplace catalog:
+
+1. For Home Assistant 2026.10 or older, make sure HACS is installed and open **HACS**. For Home Assistant 2026.11 or newer, open **Settings → Marketplace**.
+2. Open **Custom repositories** in HACS/Marketplace (menu placement depends on your Home Assistant version).
+3. Choose to add a custom repository.
 4. In **Repository**, copy and paste this exact URL:
 
    ```text
@@ -214,15 +216,15 @@ This repository is intended to be installed through HACS as a **custom repositor
 
 5. For **Type/Category**, select **Integration**.
 6. Add the repository.
-7. Open the newly added **Cisco Catalyst** repository in HACS.
+7. Open the newly added **Cisco Catalyst** repository in HACS/Marketplace.
 8. Select **Download** and choose the version offered by HACS.
 9. Restart Home Assistant Core when HACS asks you to, or restart it manually after the download completes.
 10. Go to **Settings → Devices & services → Add Integration** and search for **Cisco Catalyst**.
 11. Enter the switch connection details, choose SNMPv2c or SNMPv3, provide the credentials for that mode, and declare whether those credentials are effectively Read-only or Read/write.
 
-HACS handles copying the integration into Home Assistant's `custom_components` directory. You should **not** also manually copy a second copy when using the HACS method.
+HACS/Marketplace handles copying the integration into Home Assistant's `custom_components` directory. You should **not** manually copy another copy when using the store method.
 
-> **Development note:** HACS normally installs tagged GitHub releases. If you intentionally need to test an unreleased development branch, manual installation is the most predictable way to test that exact branch.
+> **Development note:** Store installation normally uses published versions. For unreleased private development versions, use the established manual development installation method. Marketplace continues using existing `hacs.json` repository metadata and HACS validation checks; these filenames need no change.
 
 ## Configuration
 
