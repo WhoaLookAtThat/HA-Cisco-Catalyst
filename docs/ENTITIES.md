@@ -50,6 +50,8 @@ For temperature display-unit changes, see [SNMP Setup — Units and missing valu
 
 ## Why these diagnostic entities exist
 
+For detailed explanations, including fixed versus mobile devices, event behavior, dashboard compatibility, and available versus future features, see [Technical and Compatibility Diagnostics](TECHNICAL_DIAGNOSTICS.md).
+
 ### MAC movement anomalies
 
 This is a **nonnegative cumulative count for the current integration/coordinator lifetime**, not an `on`/`off` health flag. A value of `0` means no qualifying anomalies have been observed during the current run; `1` or higher counts qualifying anomalies, and `unknown`/`unavailable` can occur when Home Assistant cannot provide a valid entity state. The count resets when its tracking object is recreated (for example, an integration reload), and should not be interpreted as a lifetime switch total.
