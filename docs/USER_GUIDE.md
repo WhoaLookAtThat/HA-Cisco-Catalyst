@@ -1,10 +1,10 @@
 # Cisco Catalyst — User Guide
 
-**Documentation · 1 of 6 — User Guide**
+**Documentation / Quick Start**
 
-**1. User Guide (current)** · [2. SNMP Setup](SNMP_SETUP.md) · [3. Entity Reference](ENTITIES.md) · [4. Automations & Events](AUTOMATIONS.md) · [5. Troubleshooting](TROUBLESHOOTING.md) · [6. Documentation Index](DOCUMENTATION_INDEX.md)
+**Quick Start (current)** · [2. SNMP Setup](SNMP_SETUP.md) · [3. Entity Reference](ENTITIES.md) · [4. Automations & Events](AUTOMATIONS.md) · [5. Troubleshooting](TROUBLESHOOTING.md) · [6. Documentation Index](DOCUMENTATION_INDEX.md)
 
-Start of guide · [Next: SNMP Setup →](SNMP_SETUP.md) · [All documentation](DOCUMENTATION_INDEX.md)
+[Optional technical guides](SNMP_SETUP.md) · [All documentation](DOCUMENTATION_INDEX.md)
 
 
 **Start here: `docs/USER_GUIDE.md`.** This page is the starting point and table of contents for the multi-page Cisco Catalyst Integration documentation. The [repository README](../README.md) explains installation and SNMP setup; it is **not a second competing starting page**. This guide is written for a technically capable homeowner or home-lab administrator.
