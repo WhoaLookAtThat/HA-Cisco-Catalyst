@@ -44,6 +44,13 @@ An **entity** is a Home Assistant measurement, condition, or control, such as a 
 
 The reference lists **each entity family implemented by the Integration** with its purpose, availability considerations, and a realistic home-lab use. See **[Entities and home-automation examples](ENTITIES.md)**. Your particular switch may not support every optional entity, and monitoring can remain available even when write access is not configured.
 
+
+## Hardware-independent naming
+
+**Cisco Catalyst Dashboard** is the companion dashboard. Its existing switch-port display is referred to as **Port Overview** in this documentation. The number and arrangement of discovered physical interfaces depend on the compatible switch model; the 48 primary plus four additional interfaces are an example from the currently validated Catalyst 3650, not a requirement for all users. **Capacity & Environment** and **Network Diagnostics** are proposed view names, not available dashboard features.
+
+Use interface names shown by your own switch (for example, `Gi1/0/2`, `Gi1/1/1`, or `Te1/1/1`) rather than assuming a specific port count or prefix.
+
 ## Public and private documentation conventions
 
 The **public and private copies of the User Guide and entity reference share the same main text and navigation**. The public copy describes released behavior. A private checkout adds clearly identified paragraphs or sections beginning with:
