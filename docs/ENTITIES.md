@@ -88,16 +88,16 @@ For alerts, use suitable time conditions and handle `unknown` or `unavailable` s
 
 | Entity / domain | What it reports | Example home-lab use |
 | --- | --- | --- |
-| **<interface> link** · binary sensor | Physical operational link is up/down, not whether the administrative control is enabled. Its attributes can include port mode, VLAN and discovered endpoint/neighbor information. | Alert when the cable link for an always-on access point goes down for several minutes. |
-| **<interface> RX bytes** · sensor | Cumulative received byte counter (64-bit when available). | Plot receive traffic rate using a derivative/rate helper; raw bytes are a counter, **not instantaneous Mbps**. |
-| **<interface> TX bytes** · sensor | Cumulative transmitted byte counter. | Compare outbound traffic trends between uplinks and end-device ports. |
-| **<interface> speed** · diagnostic sensor | Reported interface speed. | Spot a device negotiating at 100 Mbps rather than its expected 1 Gbps. |
-| **<interface> errors** · diagnostic sensor | Interface error counter from the switch. | Look for increasing errors after changing a cable; use the change over time rather than a nonzero total alone. |
-| **<interface> RX discards** · diagnostic sensor | Cumulative received packets discarded. | Check persistent increases when investigating congestion or device/network problems. |
-| **<interface> TX discards** · diagnostic sensor | Cumulative transmitted packets discarded. | Investigate drops on a busy uplink or oversubscribed port. |
-| **<interface> network mode** · diagnostic sensor | Access/trunk and related operational network/VLAN facts where reported. | Confirm an AP uplink is a trunk before investigating VLAN availability. |
-| **<interface> learned MACs** · diagnostic sensor | Learned endpoint MAC/address details, to the extent available from switch tables. | Find the port to which a particular wired device appears connected. |
-| **<interface> PoE power** · diagnostic sensor | Per-PoE-port measured draw or power-related detail, where supported. | Confirm a powered camera or access point is drawing power. |
+| **`<interface>` link** · binary sensor | Physical operational link is up/down, not whether the administrative control is enabled. Its attributes can include port mode, VLAN and discovered endpoint/neighbor information. | Alert when the cable link for an always-on access point goes down for several minutes. |
+| **`<interface>` RX bytes** · sensor | Cumulative received byte counter (64-bit when available). | Plot receive traffic rate using a derivative/rate helper; raw bytes are a counter, **not instantaneous Mbps**. |
+| **`<interface>` TX bytes** · sensor | Cumulative transmitted byte counter. | Compare outbound traffic trends between uplinks and end-device ports. |
+| **`<interface>` speed** · diagnostic sensor | Reported interface speed. | Spot a device negotiating at 100 Mbps rather than its expected 1 Gbps. |
+| **`<interface>` errors** · diagnostic sensor | Interface error counter from the switch. | Look for increasing errors after changing a cable; use the change over time rather than a nonzero total alone. |
+| **`<interface>` RX discards** · diagnostic sensor | Cumulative received packets discarded. | Check persistent increases when investigating congestion or device/network problems. |
+| **`<interface>` TX discards** · diagnostic sensor | Cumulative transmitted packets discarded. | Investigate drops on a busy uplink or oversubscribed port. |
+| **`<interface>` network mode** · diagnostic sensor | Access/trunk and related operational network/VLAN facts where reported. | Confirm an AP uplink is a trunk before investigating VLAN availability. |
+| **`<interface>` learned MACs** · diagnostic sensor | Learned endpoint MAC/address details, to the extent available from switch tables. | Find the port to which a particular wired device appears connected. |
+| **`<interface>` PoE power** · diagnostic sensor | Per-PoE-port measured draw or power-related detail, where supported. | Confirm a powered camera or access point is drawing power. |
 
 Port link attributes may also contain learned IP/MAC addresses, CDP/LLDP neighbor details, access VLAN, native VLAN and allowed VLANs where the switch reports them. These are **attributes**, not separate controls. A trunk's allowed VLAN list is observational; the Integration is not promising a trunk-edit selector.
 
@@ -107,14 +107,14 @@ An example automation could trigger when `binary_sensor.gi1_0_3_link` remains `o
 
 | Entity / domain | What you can do | Home-lab example and caution |
 | --- | --- | --- |
-| **<interface> port enabled** · switch | Administratively enable or disable Ethernet operation on a port; different from PoE power. | Temporarily isolate a lab machine. Disabling an uplink or the port used for switch management could interrupt access. |
-| **<interface> PoE** · switch | Enable or disable switch PoE power to a supported device. | Power-cycle a PoE camera or AP without turning off the Ethernet administrative port; first confirm this is the intended port. |
-| **<interface> description** · text | Read/edit the switch interface description (`ifAlias`), where write access permits. | Label a jack `Garage-Camera` so devices and dashboards have useful names. |
-| **<interface> access VLAN** · select | Choose among switch-reported eligible operational access VLANs for a supported static access port. | Move a test device to an isolated VLAN after you have created the destination VLAN. This is not for trunk ports. |
+| **`<interface>` port enabled** · switch | Administratively enable or disable Ethernet operation on a port; different from PoE power. | Temporarily isolate a lab machine. Disabling an uplink or the port used for switch management could interrupt access. |
+| **`<interface>` PoE** · switch | Enable or disable switch PoE power to a supported device. | Power-cycle a PoE camera or AP without turning off the Ethernet administrative port; first confirm this is the intended port. |
+| **`<interface>` description** · text | Read/edit the switch interface description (`ifAlias`), where write access permits. | Label a jack `Garage-Camera` so devices and dashboards have useful names. |
+| **`<interface>` access VLAN** · select | Choose among switch-reported eligible operational access VLANs for a supported static access port. | Move a test device to an isolated VLAN after you have created the destination VLAN. This is not for trunk ports. |
 
 **Read-only access:** Measurements still work with supported read-only SNMP credentials, while configuration-changing features may be unavailable, not actionable, or blocked. Switch and PoE controls may remain visible as observations, depending on the entity. Read/write capability is not a blanket permission to change a protected port; the Integration and switch both enforce their own restrictions.
 
-The Integration's source also contains a legacy numeric access-VLAN implementation (`number` domain). The current supported access-VLAN experience is the **select** entity; do not treat a historic `number.<interface>_access_vlan` and a `select.<interface>_access_vlan` as two independent current controls.
+The Integration's source also contains a legacy numeric access-VLAN implementation (`number` domain). The current supported access-VLAN experience is the **select** entity; do not treat a historic `number.`<interface>`_access_vlan` and a `select.`<interface>`_access_vlan` as two independent current controls.
 
 ## Practical automation patterns
 
