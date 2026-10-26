@@ -74,6 +74,26 @@ The Integration's source also contains a legacy numeric access-VLAN implementati
 
 **VLAN assignments.** Use supported per-port access-VLAN selectors to change a single eligible port; avoid treating a trunk/native VLAN attribute as an editable access VLAN.
 
+## Two worked Home Assistant examples
+
+These are **examples to build yourself**, not automations installed by Cisco Catalyst. Substitute the entity IDs found under **Settings → Devices & services → Cisco Catalyst → your port → Entities**.
+
+### Example 1: Notify when an access point goes offline
+
+Suppose your access point is connected to Gi1/0/3. Use its **link binary sensor**, not its port-enabled switch, for a physical link alarm:
+
+1. In **Settings → Automations & scenes**, create an automation triggered when the Gi1/0/3 link entity becomes **Off** for five minutes.
+2. Add a mobile-app notification action, such as “The access point’s Ethernet link has been down for five minutes.”
+3. Test by observing the sensor on a noncritical port rather than deliberately disconnecting the household's main uplink.
+
+This reports the **Ethernet connection state**. It does not prove the access point's Wi-Fi or internet service is working, and an intentionally disconnected or powered-off device can cause an expected alert.
+
+### Example 2: Track or restart a PoE camera
+
+For a supported PoE camera port, add the **PoE power sensor** to a dashboard to see electrical consumption. The **PoE switch entity** is a separate, configuration-changing control: if you choose to create a manual recovery script, that entity can turn power off and then on again. A short off period and a deliberate user command can be useful for a hung camera.
+
+Do not confuse the **port enabled** switch (Ethernet administrative state) with the **PoE** switch (power delivery). Do not automatically power-cycle a device simply because one polling snapshot reports an unknown state. Some switches expose power measurements without an actionable PoE control.
+
 ## Data freshness and safety
 
 Most observations come from the last successful Integration poll, **not an instantaneous live query** each time you open an entity. The **Refresh data** button asks for another poll. A missing sensor or unavailable configuration control does not necessarily indicate an Integration defect: the switch may not expose the requisite MIB data, the interface may not be an eligible access port, the entity may be hidden, or credentials may be read-only. Check the device's entity list, last update, the SNMP status, and the switch configuration.

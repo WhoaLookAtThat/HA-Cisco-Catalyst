@@ -1,25 +1,38 @@
 # Cisco Catalyst — User Guide
 
-**Start here:** [Project README](../README.md) for what the Integration does, supported hardware, switch SNMP preparation, installation, and initial setup. This **User Guide** is the table of contents for everyday use. It is intended for a technically capable homeowner or home-lab administrator, not an enterprise change-control process.
+**Start here: `docs/USER_GUIDE.md`.** This page is the starting point and table of contents for the multi-page Cisco Catalyst Integration documentation. The [repository README](../README.md) explains installation and SNMP setup; it is **not a second competing starting page**. This guide is written for a technically capable homeowner or home-lab administrator.
 
-## Reading order
+## Choose what you want to do
 
-1. **[README: installation and first setup](../README.md#installation)** — install with HACS or manually, add Cisco Catalyst in Home Assistant under **Settings → Devices & services**, and configure SNMP.
-2. **[Entities and automation examples](ENTITIES.md)** — what Home Assistant devices, entities, states and attributes mean, and realistic automations for links, PoE, bandwidth, environmental health, and VLAN controls.
-3. **[SNMP configuration and permissions](../README.md#snmp-configuration)** and **[read-only versus write access](../README.md#read-only-vs-write-access)** — choose monitoring only or enable supported switch controls.
-4. **[Optional dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard)** — the dashboard is a separate project and release, not a prerequisite for Integration entities.
-5. **[Troubleshooting and diagnostics](../README.md#features)** — entity and diagnostic explanations start in the entity reference; check the Integration logs, the device's SNMP status, and switch-side connectivity if values are unavailable.
+| Your goal | Read this page |
+| --- | --- |
+| Understand the Integration and install it | [README — installation and setup](../README.md#installation) |
+| Learn what every switch and port entity means, and how it might help in an automation | **[Entities and home-automation examples](ENTITIES.md)** |
+| Choose SNMP credentials and decide whether to permit switch changes | [SNMP configuration](../README.md#snmp-configuration) and [read-only versus write access](../README.md#read-only-vs-write-access) |
+| Add a visual switch dashboard | [Optional Cisco Catalyst Dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard) (separate installation/release) |
+| Investigate incorrect or missing entity readings | [Entity reference — data freshness](ENTITIES.md#data-freshness-and-safety), [README features](../README.md#features), and Home Assistant Integration logs |
+
+## Suggested first-time reading order
+
+1. **[Install and configure the Integration](../README.md#installation).** Prepare your switch for SNMP, install from the applicable repository or HACS release, then add Cisco Catalyst under **Settings → Devices & services**.
+2. **[Identify your Home Assistant devices and entities](ENTITIES.md#what-an-entity-is).** Look at the switch device and an individual port device; compare what you see with the entity tables.
+3. **[Choose a useful home automation](ENTITIES.md#practical-automation-patterns).** For instance, alert when the Ethernet link for an always-on access point has been down for several minutes.
+4. **[Consider write controls](ENTITIES.md#port-controls--actions-that-can-change-switch-configuration).** Monitoring does not require enabling port changes, PoE toggles, or VLAN reassignment.
+5. **[Customize your dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard)** if you want a specialized port map; it is optional.
 
 ## What appears in Home Assistant
 
-Under **Settings → Devices & services → Cisco Catalyst**, the Integration creates a *switch device* with overall health information and separate *port devices* with per-interface readings and (when configured and supported) controls. Open a device's **Entities** list. Some troubleshooting and configuration entities are hidden from default dashboard views; they still appear in the device/entity details.
+Under **Settings → Devices & services → Cisco Catalyst**, the Integration creates a *switch device* with overall health information and separate *port devices* with per-interface readings and, where supported, controls. Open a device's **Entities** list. Some diagnostic/configuration entities may not appear on dashboards automatically; they can still appear under entity details.
 
-An **entity** is a Home Assistant state or control such as `binary_sensor.<port>_link`, `sensor.<port>_rx_bytes`, `switch.<port>_poe`, or `text.<port>_description`. Names and entity IDs are examples; Home Assistant may generate different IDs based on your switch name and registry. An entity can be used in automations, dashboards, history, or scripts. An **attribute** provides additional detail attached to an entity rather than a separate entity.
+An **entity** is a Home Assistant measurement, condition, or control, such as a port's link state, receive-byte counter, PoE switch, or description text. An **attribute** is supporting detail on an entity, not a separate control. Entity IDs are assigned by Home Assistant and may differ from examples in this guide.
 
-Entity availability depends on your model, switch-reported MIB data, discovered ports, credentials, and the installed Integration version. Read-only SNMP access permits monitoring; **switch-changing actions require the Integration's configured read/write access and switch permissions**.
+The reference lists **each entity family implemented by the Integration** with its purpose, availability considerations, and a realistic home-lab use. See **[Entities and home-automation examples](ENTITIES.md)**. Your particular switch may not support every optional entity, and monitoring can remain available even when write access is not configured.
 
-## Documentation conventions
+## Public and private documentation conventions
 
-The public README and user guide describe publicly available behavior. In a private development checkout, any difference from the public instructions is introduced explicitly with a **PRIVATE DEVELOPMENT DIFFERENCE** label at the specific paragraph. The absence of such a label means the section is intended to be shared. Private development features are not automatically public/HACS features. Do not assume a development version number or a screenshot is available in the public release.
+The **public and private copies of the User Guide and entity reference share the same main text and navigation**. The public copy describes released behavior. A private checkout adds clearly identified paragraphs or sections beginning with:
 
-To locate a feature quickly, begin at this index, then follow the appropriate topic link. The entity reference is organized by **switch**, **port**, and **controls** so it can be read without knowing the source-code class names.
+> **PRIVATE DEVELOPMENT DIFFERENCE —** This text describes a private-only feature, version, hardware observation, or behavior that differs from the public release.
+
+Such a note applies to its immediately following paragraph, table, or section, not silently to the entire guide. Private implementation notes do **not** imply that the feature is part of the current public/HACS release. A section with no difference note is intended to match the public guidance.
+
