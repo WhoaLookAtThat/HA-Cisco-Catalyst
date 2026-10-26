@@ -27,6 +27,8 @@ The numbered sequence below is designed for setup, understanding, and everyday u
 
 ## Reference and specialist pages
 
+- [Technical and Compatibility Diagnostics](TECHNICAL_DIAGNOSTICS.md) — MAC movement observations, noisy roaming paths, and the dashboard contract marker
+
 - [Repository README — overview and installation](../README.md)
 - [Optional Cisco Catalyst Dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard) — separately installed frontend
 - [SNMP notification technical details](SNMP_NOTIFICATIONS.md) — switch CLI, MIB and validation background; advanced reading
