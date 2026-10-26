@@ -48,11 +48,24 @@ The following examples illustrate **Home Assistant states** and units, not every
 
 For temperature display-unit changes, see [SNMP Setup — Units and missing values](SNMP_SETUP.md#units-and-missing-values). A display unit does **not** change the switch's underlying measurements.
 
-## Why diagnostic-only entities exist
+## Why these diagnostic entities exist
 
-**MAC movement anomalies** can help identify an endpoint appearing on another switch port. Movement may be normal (cabling, topology, roaming-related behavior) or worth investigating; the sensor is not proof of a security incident.
+### MAC movement anomalies
 
-**Dashboard contract** is an integration-to-dashboard compatibility marker. Its state and attributes let the companion card identify an eligible Catalyst parent device and the supported frontend metadata schema **without parsing user-editable names**. It exists for interoperability, not as a general-purpose household automation trigger; removing it could disrupt dashboard discovery.
+This is a **nonnegative cumulative count for the current integration/coordinator lifetime**, not an `on`/`off` health flag. A value of `0` means no qualifying anomalies have been observed during the current run; `1` or higher counts qualifying anomalies, and `unknown`/`unavailable` can occur when Home Assistant cannot provide a valid entity state. The count resets when its tracking object is recreated (for example, an integration reload), and should not be interpreted as a lifetime switch total.
+
+A qualifying anomaly occurs when the **same MAC address makes at least three confirmed moves between edge ports in a five-minute window**. A move is confirmed only after two consecutive switch polling observations at the new port. A first sighting, MAC aging/disappearance, transient simultaneous visibility on multiple ports, or a change involving an identified infrastructure/unknown path is **not** counted as an edge-movement anomaly. Infrastructure suppression reduces false alarms but cannot guarantee perfect classification.
+
+The sensor includes `history_scope: coordinator_lifetime`, `recent_movements` (up to 20), and `recent_anomalies` (up to 10) as diagnostic attributes. The integration already emits Home Assistant events `cisco_catalyst_mac_movement` for any confirmed move and `cisco_catalyst_mac_anomaly` for qualifying anomalies. Event data includes `mac`, `old_interface`, `new_interface`, `observed_at`, `edge_move_count`, and `anomaly`. In **Developer Tools → Events**, listen for one of these event types to see the actual data. You can then create a Home Assistant event-triggered notification without installing additional functionality.
+
+If the counter increases, inspect the recorded MAC and ports, consider recent cable changes, intermediary switches, bridges or device behavior, and compare with the switch MAC table. It is a diagnostic clue, **not proof of hostile behavior**, and the integration does not automatically shut ports down or reassign VLANs as a response. A richer movement-history interface may be considered as a future enhancement, but alerting is already possible with existing Home Assistant automations.
+
+### Dashboard contract
+
+This is a **frontend compatibility marker**, not a monitoring metric. Its state is the integer `1` (contract schema version). Attributes include `dashboard_contract_version: 1`, `is_cisco_catalyst_switch: true`, and `cisco_catalyst_role: switch`. The companion dashboard uses this information to recognize the switch independently of user-edited device names or entity IDs.
+
+Most users do not need to open or automate this diagnostic sensor. Its practical troubleshooting purpose is to verify dashboard/integration compatibility if the companion dashboard cannot find the switch. It remains categorized as a Home Assistant **diagnostic entity**, rather than a normal operational sensor. Disabling it outright may interfere with dashboard discovery; it should be kept available to the frontend while being visually deemphasized in ordinary views.
+
 
 ## Interface name examples
 
