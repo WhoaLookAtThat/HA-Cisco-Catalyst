@@ -1,5 +1,7 @@
 # Cisco Catalyst for Home Assistant
 
+**Documentation:** [Start here](docs/USER_GUIDE.md) · [Complete documentation index](docs/DOCUMENTATION_INDEX.md) · [Entity reference](docs/ENTITIES.md) · [SNMP setup](docs/SNMP_SETUP.md) · [Automations and notifications](docs/AUTOMATIONS.md)
+
 **New here? Start with the [User Guide](docs/USER_GUIDE.md)** for a guided route through installation, entity descriptions and automation examples. For a full list of what the Integration exposes in Home Assistant, see **[Entities and home-automation examples](docs/ENTITIES.md)**. The README remains the installation and setup reference.
 
 A custom Home Assistant integration for monitoring and controlling Cisco Catalyst switches over SNMP.
@@ -75,7 +77,7 @@ This is a **supported-configuration requirement**, not an optional recommendatio
 
 The integration supports either SNMPv2c or SNMPv3.
 
-For SNMPv2c, configure separate read-only and read-write communities and restrict them with an ACL so only the Home Assistant host can reach them. SNMPv2c community strings are not encrypted.
+For SNMPv2c, you can configure separate read-only and read/write communities and optionally restrict them using an ACL configured on the Cisco switch. **The Integration does not configure switch ACLs.** See [SNMP setup and permissions](docs/SNMP_SETUP.md) for options and examples. SNMPv2c community strings are not encrypted.
 
 For SNMPv3, the configuration flow supports authenticated and encrypted USM access (authPriv) with SHA/SHA-256 authentication and AES-128 privacy. Use an IOS/IOS-XE SNMPv3 user whose views/permissions allow the MIB objects required by the features you intend to use.
 
