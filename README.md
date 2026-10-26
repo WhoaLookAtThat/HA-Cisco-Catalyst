@@ -1,5 +1,7 @@
 # Cisco Catalyst for Home Assistant
 
+**New here? Start with the [User Guide](docs/USER_GUIDE.md)** for a guided route through installation, entity descriptions and automation examples. For a full list of what the Integration exposes in Home Assistant, see **[Entities and home-automation examples](docs/ENTITIES.md)**. The README remains the installation and setup reference.
+
 A custom Home Assistant integration for monitoring and controlling Cisco Catalyst switches over SNMP.
 
 The currently validated hardware/software target is a **Cisco Catalyst WS-C3650-48FS-S** running **Cisco IOS XE 16.06.08 / Everest 16.6.8 (fc3)** with the `CAT3K_CAA-UNIVERSALK9` image in INSTALL mode. Other Catalyst models or IOS/IOS-XE releases should be treated as unvalidated unless separately tested. The integration supports SNMPv2c and SNMPv3 authPriv, with optional SNMP trap/inform reception for immediate reconciliation.
