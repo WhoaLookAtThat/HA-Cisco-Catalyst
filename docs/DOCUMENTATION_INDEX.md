@@ -35,6 +35,3 @@ The numbered sequence below is designed for setup, understanding, and everyday u
 
 Shared pages should retain the same main content. Private-only paragraphs should begin with **PRIVATE DEVELOPMENT DIFFERENCE —** and must not imply a private feature is released publicly.
 
-## Dashboard enhancement proposal
-
-A future, optional **Capacity and Environment** view could include traffic rate from RX/TX counters, CPU, memory, switch temperatures, fan status, power supply state, total/per-port PoE power, and hardware alerts. This is a proposed enhancement, **not an existing feature of the dashboard**.
