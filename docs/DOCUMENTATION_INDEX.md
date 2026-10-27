@@ -24,6 +24,9 @@ These are suggested reading paths, not mandatory sequential steps. Each page pro
 
 ## Reference and specialist pages
 
+- [VLAN Management — upcoming release](VLAN_MANAGEMENT.md) — creating, protecting, renaming, moving and recovering VLAN assignments; available only in the coordinated upcoming release
+
+
 - [Technical and Compatibility Diagnostics](TECHNICAL_DIAGNOSTICS.md) — MAC movement observations, noisy roaming paths, and the dashboard contract marker
 
 - [Repository README — overview and installation](../README.md)
