@@ -1,10 +1,8 @@
 # Troubleshooting
 
-**Documentation · 5 of 6 — Troubleshooting**
+[Documentation home](../README.md) / **Troubleshooting**
 
-[1. USER GUIDE](USER_GUIDE.md) · [2. SNMP SETUP](SNMP_SETUP.md) · [3. ENTITIES](ENTITIES.md) · [4. AUTOMATIONS](AUTOMATIONS.md) · **5. TROUBLESHOOTING (current)** · [6. DOCUMENTATION INDEX](DOCUMENTATION_INDEX.md)
-
-[← Previous](AUTOMATIONS.md) · [Next →](DOCUMENTATION_INDEX.md) · [All documentation](DOCUMENTATION_INDEX.md)
+[Quick Start](USER_GUIDE.md) · [SNMP setup](SNMP_SETUP.md) · [Entity reference](ENTITIES.md) · [Automations and events](AUTOMATIONS.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Documentation index](DOCUMENTATION_INDEX.md)
 
 ## On this page
 
