@@ -1,11 +1,8 @@
 # Cisco Catalyst — Complete Documentation Index
 
-**Documentation · 5 of 6 — Troubleshooting**
+[Documentation home](../README.md) / **Documentation index**
 
-[1. User Guide](USER_GUIDE.md) · [2. SNMP Setup](SNMP_SETUP.md) · [3. Entity Reference](ENTITIES.md) · [4. Automations & Events](AUTOMATIONS.md) · **5. Troubleshooting (current)** · [6. Documentation Index](DOCUMENTATION_INDEX.md)
-
-[← Previous: Automations & Events](AUTOMATIONS.md) · [Next: Documentation Index →](DOCUMENTATION_INDEX.md) · [All documentation](DOCUMENTATION_INDEX.md)
-
+[Quick Start](USER_GUIDE.md) · [SNMP setup](SNMP_SETUP.md) · [Entity reference](ENTITIES.md) · [Automations and events](AUTOMATIONS.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Documentation index](DOCUMENTATION_INDEX.md)
 
 ## On this page
 
