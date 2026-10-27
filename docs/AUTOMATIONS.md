@@ -1,11 +1,8 @@
 # Home Assistant Automations and SNMP Events
 
-**Documentation · 4 of 6 — Automations & Events**
+[Documentation home](../README.md) / **Automations and events**
 
-[1. User Guide](USER_GUIDE.md) · [2. SNMP Setup](SNMP_SETUP.md) · [3. Entity Reference](ENTITIES.md) · **4. Automations & Events (current)** · [5. Troubleshooting](TROUBLESHOOTING.md) · [6. Documentation Index](DOCUMENTATION_INDEX.md)
-
-[← Previous: Entity Reference](ENTITIES.md) · [Next: Troubleshooting →](TROUBLESHOOTING.md) · [All documentation](DOCUMENTATION_INDEX.md)
-
+[Quick Start](USER_GUIDE.md) · [SNMP setup](SNMP_SETUP.md) · [Entity reference](ENTITIES.md) · [Automations and events](AUTOMATIONS.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Documentation index](DOCUMENTATION_INDEX.md)
 
 ## On this page
 
