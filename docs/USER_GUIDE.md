@@ -31,6 +31,7 @@ See also the [complete documentation site list](DOCUMENTATION_INDEX.md).
 | Understand the Integration and install it | [README — installation and setup](../README.md#installation) |
 | Learn what every switch and port entity means, and how it might help in an automation | **[Entities and home-automation examples](ENTITIES.md)** |
 | Choose SNMP credentials and decide whether to permit switch changes | [SNMP configuration](../README.md#snmp-configuration) and [read-only versus write access](../README.md#read-only-vs-write-access) |
+| Manage VLANs and recover inactive access-port assignments | [VLAN Management — upcoming coordinated release](VLAN_MANAGEMENT.md) |
 | Add a visual switch dashboard | [Optional Cisco Catalyst Dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard) (separate installation/release) |
 | Investigate incorrect or missing entity readings | [Entity reference — data freshness](ENTITIES.md#data-freshness-and-safety), [README features](../README.md#features), and Home Assistant Integration logs |
 
