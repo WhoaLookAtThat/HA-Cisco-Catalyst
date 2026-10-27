@@ -122,6 +122,10 @@ An example automation could trigger when `binary_sensor.gi1_0_3_link` remains `o
 | **`<interface>` description** · text | Read/edit the switch interface description (`ifAlias`), where write access permits. | Label a jack `Garage-Camera` so devices and dashboards have useful names. |
 | **`<interface>` access VLAN** · select | Choose among switch-reported eligible operational access VLANs for a supported static access port. | Move a test device to an isolated VLAN after you have created the destination VLAN. This is not for trunk ports. |
 
+**Access VLAN select eligibility.** A write-enabled integration registers this control for detected static, non-trunk access ports. If the assigned VLAN becomes inactive, the select remains registered but unavailable until recovery. With read-only SNMP access, this control may not be created. The separate access VLAN status sensor can still report the inactive state.
+
+**Description text.** The description entity uses IF-MIB `ifAlias`, allows up to 64 characters, and verifies any authorized change by reading the result.
+
 **Read-only access:** Measurements still work with supported read-only SNMP credentials, while configuration-changing features may be unavailable, not actionable, or blocked. Switch and PoE controls may remain visible as observations, depending on the entity. Read/write capability is not a blanket permission to change a protected port; the Integration and switch both enforce their own restrictions.
 
 The Integration's source also contains a legacy numeric access-VLAN implementation (`number` domain). The current supported access-VLAN experience is the **select** entity; do not treat a historic `number.`<interface>`_access_vlan` and a `select.`<interface>`_access_vlan` as two independent current controls.
