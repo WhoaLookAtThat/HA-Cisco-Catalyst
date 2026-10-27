@@ -13,7 +13,7 @@
 
 ## Main reading path
 
-The numbered sequence below is designed for setup, understanding, and everyday use. Each page contains the main navigation, its own table of contents, and previous/next links.
+These are suggested reading paths, not mandatory sequential steps. Each page provides breadcrumbs and a table of contents.
 
 1. [User Guide](USER_GUIDE.md) — begin here
 2. [SNMP Setup](SNMP_SETUP.md)
@@ -29,6 +29,7 @@ The numbered sequence below is designed for setup, understanding, and everyday u
 - [Repository README — overview and installation](../README.md)
 - [Optional Cisco Catalyst Dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard) — separately installed frontend
 - [SNMP notification technical details](SNMP_NOTIFICATIONS.md) — switch CLI, MIB and validation background; advanced reading
+- [Native port diagnostics](NATIVE_PORT_DIAGNOSTICS.md) — diagnostic sensors and expected readings
 
 ## Public and private documentation
 
