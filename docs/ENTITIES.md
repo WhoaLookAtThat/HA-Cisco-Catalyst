@@ -1,13 +1,8 @@
 # Cisco Catalyst — Entities and Home Automation
 
-**Documentation · 2 of 6 — SNMP Setup**
+[Documentation home](../README.md) / **Entity reference**
 
-[1. User Guide](USER_GUIDE.md) · **2. SNMP Setup (current)** · [3. Entity Reference](ENTITIES.md) · [4. Automations & Events](AUTOMATIONS.md) · [5. Troubleshooting](TROUBLESHOOTING.md) · [6. Documentation Index](DOCUMENTATION_INDEX.md)
-
-[← Previous: User Guide](USER_GUIDE.md) · [Next: Entity Reference →](ENTITIES.md) · [All documentation](DOCUMENTATION_INDEX.md)
-
-
-[Start: User Guide](USER_GUIDE.md) · [Install / configure](../README.md#installation)
+[Quick Start](USER_GUIDE.md) · [SNMP setup](SNMP_SETUP.md) · [Entity reference](ENTITIES.md) · [Automations and events](AUTOMATIONS.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Documentation index](DOCUMENTATION_INDEX.md)
 
 ## On this page
 
