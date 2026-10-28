@@ -7,12 +7,12 @@
 ## On this page
 
 - [Example states, values, units, and unavailable readings](#example-states-values-units-and-unavailable-readings)
-- [Why diagnostic-only entities exist](#why-diagnostic-only-entities-exist)
+- [Why diagnostic-only entities exist](#why-these-diagnostic-entities-exist)
 - [Interface name examples](#interface-name-examples)
 - [What an entity is](#what-an-entity-is)
-- [Switch device — monitoring and actions](#switch-device-monitoring-and-actions)
-- [Port devices — state, counters, and diagnostics](#port-devices-state-counters-and-diagnostics)
-- [Port controls — actions that can change switch configuration](#port-controls-actions-that-can-change-switch-configuration)
+- [Switch device — monitoring and actions](#switch-device--monitoring-and-actions)
+- [Port devices — state, counters, and diagnostics](#port-devices--state-counters-and-diagnostics)
+- [Port controls — actions that can change switch configuration](#port-controls--actions-that-can-change-switch-configuration)
 - [Practical automation patterns](#practical-automation-patterns)
 - [Two worked Home Assistant examples](#two-worked-home-assistant-examples)
 - [Data freshness and safety](#data-freshness-and-safety)
