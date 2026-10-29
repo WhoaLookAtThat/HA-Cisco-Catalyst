@@ -171,3 +171,22 @@ Do not confuse the **port enabled** switch (Ethernet administrative state) with 
 Most observations come from the last successful Integration poll, **not an instantaneous live query** each time you open an entity. The Integration polls when it starts and on its configured schedule (normally every 300 seconds); a manual refresh or a received notification can request an earlier poll. The **Refresh data** button asks for another poll. A missing sensor or unavailable configuration control does not necessarily indicate an Integration defect: the switch may not expose the requisite MIB data, the interface may not be an eligible access port, the entity may be hidden, or credentials may be read-only. Check the device's entity list, last update, the SNMP status, and the switch configuration.
 
 Changes to port administrative state, PoE, or VLAN assignment can interrupt the devices or network paths connected to the selected port. Review the interface identity and dependencies before applying changes.
+
+## Per-port discovery: MAC addresses, IPv4 sources, and PoE
+
+The Cisco Integration links a switch's learned **MAC address → physical port** forwarding-table information to additional observations. An IP address reported by a CDP neighbor is **not** necessarily an IP learned through the switch's ARP table. The Dashboard and Home Assistant therefore distinguish these sources instead of treating them as interchangeable.
+
+| Native Home Assistant diagnostic | State | Details and interpretation |
+| --- | --- | --- |
+| **Learned MACs** | Number of MAC addresses learned on this port | Bounded `mac_addresses` list in attributes. A downstream switch, access point, or virtualization host may cause multiple MAC addresses. |
+| **Learned MAC address** | A MAC address **only when exactly one** is learned | Unknown when zero or more than one; check the learned-MAC count/list instead. |
+| **Learned endpoint IPs** | Number of distinct IPv4 addresses correlated through switch FDB + ARP information | `ip_addresses` and `discovery_source: mac_ip_correlation` attributes. The older `learned_ips` entity unique ID is retained despite the clearer display name. A Layer 2 switch may have no ARP entry even when a connected device has an IP. |
+| **CDP neighbor IPs** | Number of distinct IPv4 addresses advertised by CDP neighbors | `ip_addresses` and `discovery_source: cdp` attributes. An advertised address is not proof of reachability. |
+| **Observed port IPs** | Deduplicated union of endpoint-correlated and CDP-advertised IPv4 addresses | `ip_addresses`, `endpoint_ip_count`, `cdp_ip_count`, and `discovery_source: combined` attributes. A duplicate in both sources counts once in the combined state. |
+| **Discovered neighbors** | Number of CDP plus LLDP neighbor records | `cdp_count`, `lldp_count`, and bounded `cdp_neighbors` / `lldp_neighbors` attributes include device/interface details. Do not interpret this count as unique IP addresses. |
+| **PoE power** | Current consumption, watts | Existing per-port consumption sensor. |
+| **PoE allocated / available / maximum observed power** | Each separate power sensor, watts | Diagnostic readings from switch PoE tables; may be absent or unavailable depending on switch support. |
+
+**Illustrative real-port example (Gi1/0/23):** the port learns MAC `ac:cc:8e:74:1d:83`; CDP reports a downstream device at `10.6.80.243`. It can correctly show **0 learned endpoint IPs**, **1 CDP neighbor IP**, and **1 observed port IP**. That does not indicate contradictory data. On the Dashboard, Port Details should show separate *Learned endpoint IPs*, *CDP neighbor IPs*, and *Observed port IPs* entries, while *Downstream discovery* retains neighbor identity and platform information. Address lists are observational snapshots, not switch configuration commands.
+
+**Scope:** these IP discovery counts are currently **IPv4**. IPv6 neighbor/port discovery is separately planned and must not be inferred from these readings. External router or network-scanner enrichment is optional future work, not a prerequisite for the Cisco Integration. Some diagnostic entities are disabled or hidden by default in Home Assistant; check the device's diagnostic entity list and entity attributes if an expected measurement is not visible.
