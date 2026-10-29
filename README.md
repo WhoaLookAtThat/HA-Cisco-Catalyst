@@ -280,3 +280,7 @@ Useful context for evaluating that contribution:
 - **Reproducibility:** source, tests, build/validation configuration, and distributable artifacts where applicable are kept in the repository so changes can be reviewed without requiring access to the original ChatGPT conversation.
 
 AI assistance does not imply endorsement, review, or support by OpenAI, Home Assistant, HACS, or Cisco.
+
+### Port IP address discovery
+
+Port diagnostics distinguish **learned endpoint IPs** (IPv4 addresses correlated using the switch's MAC-forwarding and ARP tables), **CDP neighbor IPs** (IPv4 addresses advertised by connected Cisco-discovery neighbors), and **observed port IPs** (unique addresses from either source). A port can have a learned MAC and a CDP-advertised IPv4 address while reporting zero ARP-correlated endpoint IPs. The Dashboard presents the same three source labels. See [Entity reference: per-port discovery](docs/ENTITIES.md#per-port-discovery-mac-addresses-ipv4-sources-and-poe). IPv6 and optional external inventory enrichments are separate future enhancements.
