@@ -23,7 +23,7 @@ async def register_vlan_panel(hass):
         frontend_url_path=PANEL_URL.lstrip("/"),
         sidebar_title=None,
         sidebar_icon="mdi:lan",
-        module_url=f"{ASSET_URL}/cisco-catalyst-vlan-panel.js?v=0.1.4",
+        module_url=f"{ASSET_URL}/cisco-catalyst-vlan-panel.js?v=0.2.0",
         require_admin=True,
     )
 

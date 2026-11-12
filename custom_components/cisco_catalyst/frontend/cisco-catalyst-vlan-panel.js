@@ -1,5 +1,5 @@
 /** Small standalone Home Assistant panel for Cisco Catalyst VLAN creation. */
-const VLAN_PANEL_VERSION = "0.1.4";
+const VLAN_PANEL_VERSION = "0.2.0";
 const isDeletableVlanId = id => Number.isInteger(id) && id >= 2 && id <= 1001;
 const shortInterfaceName=name=>name.replace(/^(GigabitEthernet|TenGigabitEthernet|FortyGigabitEthernet|TwentyFiveGigE)(?=\d)/,prefix=>({GigabitEthernet:"Gi",TenGigabitEthernet:"Te",FortyGigabitEthernet:"Fo",TwentyFiveGigE:"Twe"})[prefix]);
 class CiscoCatalystVlanPanel extends HTMLElement {
