@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 from typing import Any
+from dataclasses import asdict
+from datetime import datetime, timezone
+
+from .protected_interface_options import get_protected_interfaces
+from .vlan_preflight_freshness import assess_snapshot_freshness
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
@@ -29,6 +34,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [
         CatalystDashboardContractSensor(coordinator),
         CatalystSnmpStatusSensor(coordinator),
+        CatalystVlanReviewReadinessSensor(coordinator, dict(entry.options)),
         CatalystUptimeSensor(coordinator),
         CatalystPoePowerSensor(coordinator),
         CatalystCpuSensor(coordinator),
@@ -57,14 +63,66 @@ async def async_setup_entry(
                 CatalystDiscardSensor(coordinator, interface.if_index, "rx"),
                 CatalystDiscardSensor(coordinator, interface.if_index, "tx"),
                 CatalystPortNetworkSensor(coordinator, interface.if_index),
+                CatalystAccessVlanStatusSensor(coordinator, interface.if_index),
                 CatalystLearnedMacSensor(coordinator, interface.if_index),
+                CatalystPrimaryMacSensor(coordinator, interface.if_index),
+                CatalystLearnedIpSensor(coordinator, interface.if_index),
+                CatalystPortIpSourceSensor(coordinator, interface.if_index, "cdp"),
+                CatalystPortIpSourceSensor(coordinator, interface.if_index, "observed"),
+                CatalystNeighborDiscoverySensor(coordinator, interface.if_index),
             )
         )
-    entities.extend(
-        CatalystPoePortPowerSensor(coordinator, port.index)
-        for port in coordinator.data.poe_ports.values()
-    )
+    for port in coordinator.data.poe_ports.values():
+        entities.append(CatalystPoePortPowerSensor(coordinator, port.index))
+        entities.extend(
+            CatalystPoePowerDetailSensor(coordinator, port.index, field)
+            for field in ("allocated", "available", "maximum")
+        )
     async_add_entities(entities)
+
+
+
+class CatalystAccessVlanStatusSensor(CatalystInterfaceEntity, SensorEntity):
+    """Read-only explanation of VLAN operational status on a physical port."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: CatalystCoordinator, if_index: int) -> None:
+        super().__init__(coordinator)
+        self.if_index = if_index
+        port = coordinator.data.interfaces[if_index]
+        self._attr_name = f"{port.name} access VLAN status"
+        self._attr_unique_id = f"{coordinator.client.host}_if_{if_index}_access_vlan_status"
+
+    @property
+    def native_value(self) -> str:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        if port is None or port.access_vlan is None:
+            return "unknown"
+        if port.is_trunk is True:
+            return "trunk"
+        if port.access_vlan not in self.coordinator.data.operational_vlans:
+            return "inactive"
+        return "operational"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        vlan = port.access_vlan if port is not None else None
+        inactive = (
+            port is not None and port.is_trunk is False and vlan is not None
+            and vlan not in self.coordinator.data.operational_vlans
+        )
+        return {
+            **self.catalyst_attributes,
+            "access_vlan": vlan,
+            "recovery_required": bool(inactive),
+            "message": (
+                f"Access VLAN {vlan} is inactive. Use VLAN Management to review recovery."
+                if inactive else "No inactive access VLAN assignment detected."
+            ),
+            "vlan_management_url": "/cisco-catalyst-vlan",
+        }
 
 
 class CatalystDashboardContractSensor(CatalystEntity, SensorEntity):
@@ -582,6 +640,186 @@ class CatalystLearnedMacSensor(CatalystInterfaceEntity, SensorEntity):
         return attributes
 
 
+class CatalystPrimaryMacSensor(CatalystInterfaceEntity, SensorEntity):
+    """Single learned endpoint MAC as a native state; never guess among multiple."""
+
+    catalyst_role = "primary_mac"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: CatalystCoordinator, if_index: int) -> None:
+        super().__init__(coordinator)
+        self.if_index = if_index
+        port = coordinator.data.interfaces[if_index]
+        self._attr_name = f"{port.name} learned MAC address"
+        self._attr_unique_id = f"{coordinator.client.host}_{if_index}_primary_mac"
+
+    @property
+    def native_value(self) -> str | None:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        if port is None or len(port.mac_addresses) != 1:
+            return None
+        return port.mac_addresses[0]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        return {
+            **self.catalyst_attributes,
+            "learned_mac_count": len(port.mac_addresses) if port else 0,
+            "ambiguous": bool(port and len(port.mac_addresses) > 1),
+        }
+
+
+class CatalystPoePowerDetailSensor(CatalystPoeEntity, SensorEntity):
+    """Expose existing PoE allocations and peak measurements as native states."""
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _FIELDS = {
+        "allocated": ("PoE allocated power", "power_allocated_mw"),
+        "available": ("PoE available power", "power_available_mw"),
+        "maximum": ("PoE maximum observed power", "max_power_drawn_mw"),
+    }
+
+    def __init__(self, coordinator: CatalystCoordinator, poe_index: str, field: str) -> None:
+        super().__init__(coordinator)
+        self.poe_index = poe_index
+        self._field = field
+        port = coordinator.data.poe_ports[poe_index]
+        self._attr_name = f"{port.name} {self._FIELDS[field][0]}"
+        self._attr_unique_id = f"{coordinator.client.host}_poe_{poe_index}_{field}_power"
+
+    @property
+    def native_value(self) -> float | None:
+        port = self.coordinator.data.poe_ports.get(self.poe_index)
+        if port is None:
+            return None
+        milliwatts = getattr(port, self._FIELDS[self._field][1], None)
+        return None if milliwatts is None else round(milliwatts / 1000, 3)
+
+
+def _port_ip_sources(port: Any) -> tuple[list[str], list[str], list[str]]:
+    """Keep MAC/IP correlation separate from CDP-advertised IP evidence."""
+    correlated = sorted(set(port.ip_addresses))
+    advertised = sorted({
+        n.address for n in port.cdp_neighbors if n.address
+    })
+    return correlated, advertised, sorted(set(correlated) | set(advertised))
+
+
+class CatalystLearnedIpSensor(CatalystInterfaceEntity, SensorEntity):
+    """IP count from MAC/IP correlation (not CDP advertisements)."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"ip_addresses"})
+
+    def __init__(self, coordinator: CatalystCoordinator, if_index: int) -> None:
+        super().__init__(coordinator)
+        self.if_index = if_index
+        name = coordinator.data.interfaces[if_index].name
+        self._attr_name = f"{name} learned endpoint IPs"
+        self._attr_unique_id = f"{coordinator.client.host}_{if_index}_learned_ips"
+
+    @property
+    def native_value(self) -> int | None:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        return None if port is None else len(_port_ip_sources(port)[0])
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        if port is None:
+            return {}
+        addresses = _port_ip_sources(port)[0]
+        return {
+            **self.catalyst_attributes,
+            "discovery_source": "mac_ip_correlation",
+            "ip_addresses": addresses[:_PORT_DIAGNOSTIC_MAX_IPS],
+            "ip_addresses_truncated": len(addresses) > _PORT_DIAGNOSTIC_MAX_IPS,
+        }
+
+
+class CatalystPortIpSourceSensor(CatalystInterfaceEntity, SensorEntity):
+    """CDP-advertised or combined observed port IP count."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"ip_addresses", "source_details"})
+
+    def __init__(self, coordinator: CatalystCoordinator, if_index: int, source: str) -> None:
+        super().__init__(coordinator)
+        self.if_index = if_index
+        self._source = source
+        name = coordinator.data.interfaces[if_index].name
+        label = "CDP neighbor IPs" if source == "cdp" else "observed port IPs"
+        self._attr_name = f"{name} {label}"
+        self._attr_unique_id = f"{coordinator.client.host}_{if_index}_{source}_ips"
+
+    @property
+    def native_value(self) -> int | None:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        if port is None:
+            return None
+        endpoint, cdp, observed = _port_ip_sources(port)
+        return len(cdp if self._source == "cdp" else observed)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        if port is None:
+            return {}
+        endpoint, cdp, observed = _port_ip_sources(port)
+        addresses = cdp if self._source == "cdp" else observed
+        attrs = {
+            **self.catalyst_attributes,
+            "discovery_source": "cdp" if self._source == "cdp" else "combined",
+            "ip_addresses": addresses[:_PORT_DIAGNOSTIC_MAX_IPS],
+            "ip_addresses_truncated": len(addresses) > _PORT_DIAGNOSTIC_MAX_IPS,
+        }
+        if self._source != "cdp":
+            attrs["endpoint_ip_count"] = len(endpoint)
+            attrs["cdp_ip_count"] = len(cdp)
+        return attrs
+
+
+class CatalystNeighborDiscoverySensor(CatalystInterfaceEntity, SensorEntity):
+    """Neighbor count with bounded CDP/LLDP discovery detail attributes."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"cdp_neighbors", "lldp_neighbors"})
+    _MAX_NEIGHBORS = 16
+
+    def __init__(self, coordinator: CatalystCoordinator, if_index: int) -> None:
+        super().__init__(coordinator)
+        self.if_index = if_index
+        name = coordinator.data.interfaces[if_index].name
+        self._attr_name = f"{name} discovered neighbors"
+        self._attr_unique_id = f"{coordinator.client.host}_{if_index}_discovered_neighbors"
+
+    @property
+    def native_value(self) -> int | None:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        return None if port is None else len(port.cdp_neighbors) + len(port.lldp_neighbors)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        port = self.coordinator.data.interfaces.get(self.if_index)
+        if port is None:
+            return {}
+        return {
+            **self.catalyst_attributes,
+            "cdp_count": len(port.cdp_neighbors),
+            "lldp_count": len(port.lldp_neighbors),
+            "cdp_neighbors": [asdict(n) for n in port.cdp_neighbors[:self._MAX_NEIGHBORS]],
+            "lldp_neighbors": [asdict(n) for n in port.lldp_neighbors[:self._MAX_NEIGHBORS]],
+            "neighbors_truncated": (
+                len(port.cdp_neighbors) > self._MAX_NEIGHBORS
+                or len(port.lldp_neighbors) > self._MAX_NEIGHBORS
+            ),
+        }
+
+
 class CatalystErrorSensor(CatalystInterfaceEntity, SensorEntity):
     catalyst_role = "errors"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -614,3 +852,46 @@ class CatalystErrorSensor(CatalystInterfaceEntity, SensorEntity):
                 "tx_discards": interface.out_discards,
             }
         )
+
+
+class CatalystVlanReviewReadinessSensor(CatalystEntity, SensorEntity):
+    """Read-only indicator of prerequisite data for a VLAN proposal review."""
+
+    _attr_name = "VLAN review readiness"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: CatalystCoordinator, options: dict[str, Any]) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.client.host}_vlan_review_readiness"
+        self._options = options
+
+    def _assessment(self) -> tuple[str, list[str]]:
+        blockers: list[str] = []
+        try:
+            protected = get_protected_interfaces(self._options)
+        except (TypeError, ValueError):
+            protected = None
+            blockers.append("invalid_protected_interface_options")
+        if protected is None:
+            blockers.append("protected_interfaces_not_configured")
+        freshness = assess_snapshot_freshness(
+            getattr(self.coordinator, "last_successful_poll_at", None),
+            datetime.now(timezone.utc),
+            update_succeeded=bool(getattr(self.coordinator, "last_update_success", False)),
+        )
+        blockers.extend(freshness.reasons)
+        return ("blocked" if blockers else "ready_for_review", blockers)
+
+    @property
+    def native_value(self) -> str:
+        return self._assessment()[0]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        _, blockers = self._assessment()
+        return {
+            "read_only": True,
+            "grants_write_permission": False,
+            "blockers": blockers,
+            "scope": "prerequisites_only_not_a_per_port_vlan_approval",
+        }
