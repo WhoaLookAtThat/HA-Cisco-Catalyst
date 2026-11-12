@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import CatalystCoordinator
 from .entity import CatalystInterfaceEntity
+from .mac_movement import MacMovementTracker
 
 
 def _format_vlan_ranges(vlans: list[int]) -> str:
@@ -71,6 +72,11 @@ class CatalystLinkSensor(CatalystInterfaceEntity, BinarySensorEntity):
         attributes: dict[str, Any] = {
             **self.catalyst_attributes,
             "access_vlan": interface.access_vlan,
+            "access_vlan_operational": (
+                interface.access_vlan in self.coordinator.data.operational_vlans
+                if interface.access_vlan is not None else None
+            ),
+            "vlan_management_url": "/cisco-catalyst-vlan",
             "port_mode": (
                 "trunk"
                 if interface.is_trunk is True
@@ -81,6 +87,9 @@ class CatalystLinkSensor(CatalystInterfaceEntity, BinarySensorEntity):
             "native_vlan": interface.native_vlan,
             "mac_addresses": interface.mac_addresses,
             "ip_addresses": interface.ip_addresses,
+            # Advisory topology evidence, not a permission or write-safety decision.
+            "path_type": MacMovementTracker.classify_path(interface),
+            "path_evidence": [key for key, found in (("trunk", interface.is_trunk is True), ("cdp", bool(interface.cdp_neighbors)), ("lldp", bool(interface.lldp_neighbors)), ("multiple_macs", interface.is_trunk is False and len(interface.mac_addresses) > 1)) if found],
         }
         if interface.is_trunk is True:
             attributes["allowed_vlans"] = _format_vlan_ranges(interface.allowed_vlans)
