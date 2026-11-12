@@ -43,10 +43,14 @@ from .const import (
     MIN_SCAN_INTERVAL_SECONDS,
     SYS_NAME,
 )
+from .protected_interface_options import OPTION_PROTECTED_INTERFACES, parse_protected_interfaces
 from .snmp import CatalystSnmpClient, CatalystSnmpError
 
 _SECTION_SNMPV2C = "snmpv2c_credentials"
 _SECTION_SNMPV3 = "snmpv3_credentials"
+_SECTION_PROTECTION = "protection_settings"
+_SECTION_POLLING = "polling_settings"
+_SECTION_NOTIFICATIONS = "notification_settings"
 
 
 def _connection_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
@@ -318,38 +322,92 @@ class CatalystConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
+
+def _merge_options_input(
+    saved: dict[str, Any], user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Merge only the visible Options fields; retain panel-managed VLAN protection."""
+    data = dict(saved)
+    for section_name, fields in (
+        (_SECTION_PROTECTION, (OPTION_PROTECTED_INTERFACES,)),
+        (_SECTION_POLLING, (CONF_SCAN_INTERVAL,)),
+        (_SECTION_NOTIFICATIONS, (CONF_TRAP_ENABLED, CONF_TRAP_PORT)),
+    ):
+        section_data = user_input.get(section_name, {})
+        if isinstance(section_data, dict):
+            data.update({key: section_data[key] for key in fields if key in section_data})
+    if OPTION_PROTECTED_INTERFACES in data:
+        parse_protected_interfaces(data[OPTION_PROTECTED_INTERFACES])
+    return data
+
+
+def _options_section_defaults(options: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Provide actual saved values to native HA section inputs on initial render."""
+    return {
+        _SECTION_PROTECTION: {
+            OPTION_PROTECTED_INTERFACES: options.get(OPTION_PROTECTED_INTERFACES, ""),
+        },
+        _SECTION_POLLING: {
+            CONF_SCAN_INTERVAL: options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS),
+        },
+        _SECTION_NOTIFICATIONS: {
+            CONF_TRAP_ENABLED: options.get(CONF_TRAP_ENABLED, False),
+            CONF_TRAP_PORT: options.get(CONF_TRAP_PORT, DEFAULT_TRAP_PORT),
+        },
+    }
+
+
 class CatalystOptionsFlow(OptionsFlowWithReload):
     """Handle Cisco Catalyst integration options."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage integration options."""
+        """Manage protection and polling options without exposing VLAN IDs twice."""
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            try:
+                data = _merge_options_input(self.config_entry.options, user_input)
+            except (ValueError, KeyError, TypeError):
+                errors["base"] = "invalid_protected_interfaces"
+            else:
+                return self.async_create_entry(data=data)
 
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_SCAN_INTERVAL,
-                    default=self.config_entry.options.get(
-                        CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS
-                    ),
-                ): vol.All(
-                    vol.Coerce(int),
-                    vol.Range(
-                        min=MIN_SCAN_INTERVAL_SECONDS,
-                        max=MAX_SCAN_INTERVAL_SECONDS,
-                    ),
-                ),
-                vol.Required(
-                    CONF_TRAP_ENABLED,
-                    default=self.config_entry.options.get(CONF_TRAP_ENABLED, False),
-                ): bool,
-                vol.Required(
-                    CONF_TRAP_PORT,
-                    default=self.config_entry.options.get(CONF_TRAP_PORT, DEFAULT_TRAP_PORT),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        options = self.config_entry.options
+        protection_schema = vol.Schema({
+            vol.Optional(
+                OPTION_PROTECTED_INTERFACES,
+                description={"suggested_value": options.get(OPTION_PROTECTED_INTERFACES, "")},
+            ): str,
+        })
+        polling_schema = vol.Schema({
+            vol.Required(
+                CONF_SCAN_INTERVAL,
+                default=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS),
+            ): vol.All(vol.Coerce(int), vol.Range(
+                min=MIN_SCAN_INTERVAL_SECONDS, max=MAX_SCAN_INTERVAL_SECONDS
+            )),
+        })
+        notifications_schema = vol.Schema({
+            vol.Required(
+                CONF_TRAP_ENABLED,
+                default=options.get(CONF_TRAP_ENABLED, False),
+            ): bool,
+            vol.Required(
+                CONF_TRAP_PORT,
+                default=options.get(CONF_TRAP_PORT, DEFAULT_TRAP_PORT),
+            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
+        })
+        defaults = _options_section_defaults(options)
+        schema = vol.Schema({
+            vol.Required(_SECTION_PROTECTION, default=defaults[_SECTION_PROTECTION]): section(
+                protection_schema, SectionConfig(collapsed=False)
+            ),
+            vol.Required(_SECTION_POLLING, default=defaults[_SECTION_POLLING]): section(
+                polling_schema, SectionConfig(collapsed=True)
+            ),
+            vol.Required(_SECTION_NOTIFICATIONS, default=defaults[_SECTION_NOTIFICATIONS]): section(
+                notifications_schema, SectionConfig(collapsed=True)
+            ),
+        })
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
