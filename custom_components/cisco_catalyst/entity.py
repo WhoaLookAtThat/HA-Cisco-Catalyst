@@ -9,6 +9,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .interface_display import short_interface_name
 from .coordinator import CatalystCoordinator
 
 
@@ -35,6 +36,7 @@ class CatalystEntity(CoordinatorEntity[CatalystCoordinator]):
             model=model,
             serial_number=serial,
             sw_version=sw_version,
+            configuration_url="homeassistant://cisco-catalyst-vlan",
         )
 
 
@@ -86,6 +88,12 @@ class CatalystInterfaceEntity(CatalystEntity):
     catalyst_role: str = "interface"
 
     @property
+    def name(self) -> str | None:
+        # Display only. _attr_name and unique_id are unchanged.
+        original = super().name
+        return short_interface_name(original) if original else original
+
+    @property
     def catalyst_attributes(self) -> dict[str, Any]:
         """Frontend-visible integration contract for interface entities."""
         interface = self.coordinator.data.interfaces.get(self.if_index)
@@ -113,10 +121,11 @@ class CatalystInterfaceEntity(CatalystEntity):
                     f"{self.coordinator.client.host}:interface:{self.if_index}",
                 )
             },
-            name=name,
+            name=short_interface_name(name),
             manufacturer="Cisco",
             model="Catalyst Ethernet port",
             via_device=(DOMAIN, self.coordinator.client.host),
+            configuration_url="homeassistant://cisco-catalyst-vlan",
         )
     @property
     def available(self) -> bool:
