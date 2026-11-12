@@ -183,7 +183,7 @@ def test_interface_entities_attach_to_child_port_device() -> None:
         ("cisco_catalyst", "192.0.2.1:interface:1")
     }
     assert info["via_device"] == ("cisco_catalyst", "192.0.2.1")
-    assert info["name"] == "GigabitEthernet1/0/1"
+    assert info["name"] == "Gi1/0/1"
 
 
 def test_snmp_status_sensor_exposes_mode_and_listener_without_credentials() -> None:
@@ -243,3 +243,32 @@ def test_native_port_diagnostics_attach_to_same_child_device() -> None:
         "available_power_w": 30.0,
         "max_power_drawn_w": 5.1,
     }
+
+def test_link_path_type_uses_conservative_topology_evidence() -> None:
+    from custom_components.cisco_catalyst.binary_sensor import CatalystLinkSensor
+
+    data = _data()
+    port = data.interfaces[1]
+    sensor = CatalystLinkSensor(_coordinator(data), 1)
+    assert sensor.extra_state_attributes["path_type"] == "unknown"
+    port.is_trunk = False
+    port.mac_addresses = ["endpoint-a"]
+    assert sensor.extra_state_attributes["path_type"] == "edge"
+    port.mac_addresses.append("endpoint-b")
+    assert sensor.extra_state_attributes["path_type"] == "infrastructure"
+    port.is_trunk = True
+    port.mac_addresses = []
+    assert sensor.extra_state_attributes["path_type"] == "infrastructure"
+
+def test_link_path_evidence_is_read_only_and_explains_infrastructure() -> None:
+    from custom_components.cisco_catalyst.binary_sensor import CatalystLinkSensor
+
+    data = _data()
+    port = data.interfaces[1]
+    sensor = CatalystLinkSensor(_coordinator(data), 1)
+    assert sensor.extra_state_attributes["path_evidence"] == []
+    port.is_trunk = True
+    assert sensor.extra_state_attributes["path_evidence"] == ["trunk"]
+    port.is_trunk = False
+    port.mac_addresses = ["a", "b"]
+    assert sensor.extra_state_attributes["path_evidence"] == ["multiple_macs"]
