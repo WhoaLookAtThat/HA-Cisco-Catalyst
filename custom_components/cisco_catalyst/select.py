@@ -13,8 +13,12 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import CISCO_VM_VLAN, CISCO_VM_VLAN_TYPE_STATIC
 from .coordinator import CatalystCoordinator
+from .port_protection import assess_port_protection
+from .protected_interface_options import get_protected_interfaces
+from .protected_vlan_options import configured_protected_vlans
 from .entity import CatalystInterfaceEntity
 from .write import async_write_with_readback
+from .vlan_write_precheck import assess_vlan_write_precheck
 
 RESERVED_ETHERNET_VLANS = frozenset(range(1002, 1006))
 
@@ -33,16 +37,16 @@ async def async_setup_entry(
     entry: ConfigEntry[CatalystCoordinator],
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up access-VLAN selectors only where access mode is authoritative."""
+    """Register static access selectors even when their current VLAN is inactive."""
     coordinator = entry.runtime_data
     if not coordinator.write_enabled:
         return
     async_add_entities(
-        CatalystAccessVlanSelect(coordinator, port.if_index)
+        CatalystAccessVlanSelect(coordinator, port.if_index, entry)
         for port in coordinator.data.interfaces.values()
         if (
             port.access_vlan is not None
-            and port.access_vlan in coordinator.data.operational_vlans
+            # Entity persists through orphan recovery; available() gates writes.
             and port.access_vlan_type == CISCO_VM_VLAN_TYPE_STATIC
             and port.is_trunk is False
         )
@@ -55,12 +59,22 @@ class CatalystAccessVlanSelect(CatalystInterfaceEntity, SelectEntity):
     catalyst_role = "access_vlan"
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(self, coordinator: CatalystCoordinator, if_index: int) -> None:
+    def __init__(self, coordinator: CatalystCoordinator, if_index: int, options: dict | None = None) -> None:
         super().__init__(coordinator)
         self.if_index = if_index
+        self._options_source = options
         port = coordinator.data.interfaces[if_index]
+        self._expected_interface_name = port.name
         self._attr_name = f"{port.name} access VLAN"
         self._attr_unique_id = f"{coordinator.client.host}_if_{if_index}_access_vlan"
+
+    @property
+    def _protection_options(self) -> dict:
+        """Read current policy rather than a snapshot taken when the entity loaded."""
+        source = self._options_source
+        if source is None:
+            return {}
+        return source.options if isinstance(source, ConfigEntry) else source
 
     @property
     def available(self) -> bool:
@@ -130,13 +144,60 @@ class CatalystAccessVlanSelect(CatalystInterfaceEntity, SelectEntity):
                 "Access VLAN writes require Cisco vmVlanType static(1)"
             )
 
+        try:
+            protected_names = get_protected_interfaces(self._protection_options)
+        except (ValueError, TypeError) as err:
+            raise HomeAssistantError("Invalid protected-port settings; refusing VLAN change") from err
+        protection = assess_port_protection(
+            self.coordinator.data,
+            self.if_index,
+            protected_interface_names=protected_names,
+            expected_interface_name=self._expected_interface_name,
+        )
+        if protection.blocked:
+            raise HomeAssistantError(
+                "Access VLAN change blocked by port protection: "
+                + ", ".join(protection.reasons)
+            )
+
+        try:
+            protected_vlans = configured_protected_vlans(self._protection_options)
+        except (ValueError, TypeError) as err:
+            raise HomeAssistantError("Invalid protected-VLAN settings; refusing VLAN change") from err
+        if protected_vlans is not None:
+            if vlan in protected_vlans:
+                raise HomeAssistantError(
+                    f"Destination VLAN {vlan} is protected; refusing VLAN change"
+                )
+            if port.access_vlan in protected_vlans and port.access_vlan != vlan:
+                raise HomeAssistantError(
+                    f"Current VLAN {port.access_vlan} is protected; refusing VLAN change"
+                )
+
+        expected_current_vlan = port.access_vlan
         oid = f"{CISCO_VM_VLAN}.{self.if_index}"
+        async def final_check():
+            blockers = assess_vlan_write_precheck(
+                self.coordinator.data, self._protection_options,
+                self.if_index, self._expected_interface_name,
+                expected_current_vlan, vlan,
+            )
+            if blockers:
+                raise HomeAssistantError("VLAN change blocked: " + ", ".join(blockers))
+            try:
+                actual = int(await self.coordinator.client.get(oid))
+            except Exception as err:
+                raise HomeAssistantError("Could not verify current VLAN") from err
+            if actual != expected_current_vlan:
+                raise HomeAssistantError("Current VLAN changed; review the port again")
+
         await async_write_with_readback(
             self.coordinator,
             oid,
             vlan,
             writer=self.coordinator.client.set_integer,
             normalize_readback=int,
+            pre_write_check=final_check,
             expected_state=lambda: (
                 (current := self.coordinator.data.interfaces.get(self.if_index))
                 is not None
