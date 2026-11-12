@@ -12,7 +12,8 @@ from custom_components.cisco_catalyst import async_unload_entry
 async def test_unload_entry_closes_runtime_resources() -> None:
     """Successful platform unload closes integration-owned resources."""
     hass = SimpleNamespace(
-        config_entries=SimpleNamespace(async_unload_platforms=AsyncMock(return_value=True))
+        data={},
+        config_entries=SimpleNamespace(async_unload_platforms=AsyncMock(return_value=True), async_entries=Mock(return_value=[]))
     )
     client = Mock()
     trap_receiver = Mock()

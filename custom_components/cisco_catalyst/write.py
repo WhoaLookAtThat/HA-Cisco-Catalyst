@@ -30,6 +30,7 @@ async def async_write_with_readback(
     normalize_readback: Callable[[Any], T],
     expected_state: Callable[[], bool] | None = None,
     apply_verified_state: Callable[[], None] | None = None,
+    pre_write_check: Callable[[], Awaitable[None]] | None = None,
 ) -> None:
     """Serialize a write, exact-OID verification, and state reconciliation."""
     if not coordinator.write_enabled:
@@ -45,6 +46,8 @@ async def async_write_with_readback(
         coordinator.async_update_listeners()
         try:
             async with coordinator.io_lock:
+                if pre_write_check is not None:
+                    await pre_write_check()
                 await writer(oid, value)
                 for attempt in range(WRITE_READBACK_ATTEMPTS):
                     if attempt:

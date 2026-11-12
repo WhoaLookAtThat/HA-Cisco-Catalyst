@@ -38,6 +38,14 @@ from .coordinator import CatalystCoordinator
 from .mac_movement import MacMovementTracker
 from .snmp import CatalystSnmpClient
 from .trap import CatalystTrapReceiver
+from .vlan_review_service import register_vlan_review_service
+from .vlan_confirm_service import register_confirm_vlan_service
+from .vlan_create_service import register_create_vlan_service
+from .vlan_inventory_service import register_vlan_inventory_service
+from .vlan_rename_service import register_vlan_rename_service
+from .vlan_delete_service import register_vlan_delete_service
+from .vlan_protection_service import register_vlan_protection_services
+from .vlan_panel import register_vlan_panel, unregister_vlan_panel
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,6 +122,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: CatalystConfigEntry) -> 
     )
 
     entry.runtime_data = coordinator
+    register_vlan_review_service(hass)
+    register_confirm_vlan_service(hass)
+    register_create_vlan_service(hass)
+    register_vlan_inventory_service(hass)
+    register_vlan_rename_service(hass)
+    register_vlan_delete_service(hass)
+    register_vlan_protection_services(hass)
+    await register_vlan_panel(hass)
     _remove_legacy_access_vlan_number_entities(hass, entry)
     if entry.options.get(CONF_TRAP_ENABLED, False):
         trap_receiver = CatalystTrapReceiver(
@@ -148,5 +164,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: CatalystConfigEntry) ->
     if trap_receiver is not None:
         trap_receiver.close()
     entry.runtime_data.client.close()
+    if not any(
+        candidate.entry_id != entry.entry_id and candidate.domain == DOMAIN
+        and getattr(candidate, 'runtime_data', None) is not None
+        for candidate in hass.config_entries.async_entries(DOMAIN)
+    ):
+        unregister_vlan_panel(hass)
     _LOGGER.info("Cisco Catalyst config entry %s unloaded successfully", entry.entry_id)
     return True
