@@ -108,18 +108,48 @@
     "step": {
       "init": {
         "title": "Cisco Catalyst options",
-        "description": "Choose how often Home Assistant automatically reconciles data with the switch. Use Refresh data on the device for an immediate read-only update.",
-        "data": {
-          "scan_interval": "Polling interval (seconds)",
-          "trap_enabled": "Receive SNMP traps/informs",
-          "trap_port": "Trap/inform UDP listen port"
-        },
-        "data_description": {
-          "scan_interval": "Automatic polling interval from 30 to 3600 seconds. Default: 300 seconds (5 minutes).",
-          "trap_enabled": "When enabled, notifications trigger an immediate authoritative SNMP refresh and a Home Assistant event.",
-          "trap_port": "UDP port to listen on. Default 1162 avoids requiring privileged port 162."
+        "description": "Manage switch protection and advanced integration settings. [VLAN Management](/cisco-catalyst-vlan) opens the VLAN inventory and management panel (administrator access required).",
+        "data": {},
+        "data_description": {},
+        "sections": {
+          "protection_settings": {
+            "name": "Protection settings",
+            "description": "Physical ports excluded from supported VLAN reassignment. VLAN protection is managed in VLAN Management.",
+            "data": {
+              "protected_interfaces": "Protected physical interfaces"
+            },
+            "data_description": {
+              "protected_interfaces": "Comma-separated full Cisco interface names, such as GigabitEthernet1/0/24, GigabitEthernet1/0/44. Existing protected port settings are retained unless you edit them."
+            }
+          },
+          "polling_settings": {
+            "name": "Polling settings",
+            "description": "How often Home Assistant polls the switch.",
+            "data": {
+              "scan_interval": "Polling interval (seconds)"
+            },
+            "data_description": {
+              "scan_interval": "Automatic polling interval from 30 to 3600 seconds. Default: 300 seconds (5 minutes)."
+            }
+          },
+          "notification_settings": {
+            "name": "SNMP notifications",
+            "description": "Optional trap/inform listener settings.",
+            "data": {
+              "trap_enabled": "Receive SNMP traps/informs",
+              "trap_port": "Trap/inform UDP listen port"
+            },
+            "data_description": {
+              "trap_enabled": "When enabled, notifications trigger an immediate authoritative SNMP refresh and a Home Assistant event.",
+              "trap_port": "UDP port to listen on. Default 1162 avoids requiring privileged port 162."
+            }
+          }
         }
       }
+    },
+    "error": {
+      "invalid_protected_interfaces": "Use valid full physical interface names separated by commas, with no duplicates.",
+      "invalid_protection_settings": "One or more protection settings are invalid. Use valid, unique full physical interface names separated by commas."
     }
   }
 }
