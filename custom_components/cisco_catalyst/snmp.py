@@ -163,6 +163,24 @@ class CatalystSnmpClient:
         )
         self._check(error_indication, error_status)
 
+    async def set_multiple(self, bindings: list[tuple[str, Any]]) -> None:
+        """Issue one atomic SNMP SET PDU for related varbinds.
+
+        This does not make a multi-PDU VLAN edit-buffer transaction atomic.
+        The caller must perform separate capability, identity and readback checks.
+        """
+        if not bindings:
+            raise ValueError("At least one SNMP varbind is required")
+        error_indication, error_status, _error_index, _var_binds = await set_cmd(
+            self._require_engine(),
+            self._auth(write=True),
+            await self._target(),
+            ContextData(),
+            *(ObjectType(ObjectIdentity(oid), value) for oid, value in bindings),
+            lookupMib=False,
+        )
+        self._check(error_indication, error_status)
+
     async def set_integer(self, oid: str, value: int) -> None:
         """Write an INTEGER."""
         await self._set(oid, Integer(value))
