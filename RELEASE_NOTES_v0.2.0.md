@@ -25,8 +25,8 @@ Start with read-only SNMP access; enable any switch-write capability only after 
 
 ## Known limitations and next-release work
 
-- Native Home Assistant IP **count** sensors expose complete observed IPv4 address lists as **attributes**. Separate native sensors displaying an unambiguous address directly as the **state** are planned under [#83](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-private-archive/issues/83), not included in this version.
-- Proactive **Network Health** findings, severity levels and low-noise anomaly notifications are planned under #91; a large cumulative discard count alone does not prove an active fault.
+- Native Home Assistant IP **count** sensors expose complete observed IPv4 address lists as **attributes**. Separate native sensors displaying an unambiguous address directly as the **state** are planned for a future release; not included in this version.
+- Proactive **Network Health** findings, severity levels and low-noise anomaly notifications are planned for a future release; a large cumulative discard count alone does not prove an active fault.
 - IPv6 neighbor/endpoint discovery and optional third-party device enrichment are future work.
 - Automated switch configuration is intentionally guarded; this beta does not establish production readiness.
 
