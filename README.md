@@ -1,10 +1,9 @@
 # Cisco Catalyst for Home Assistant
 
-**New here? Start with the [User Guide](docs/USER_GUIDE.md)** for a guided route through installation, entity descriptions and automation examples. For a full list of what the Integration exposes in Home Assistant, see **[Entities and home-automation examples](docs/ENTITIES.md)**. The README remains the installation and setup reference.
+**Get started:** [Quick Start](docs/USER_GUIDE.md) · [Entity reference](docs/ENTITIES.md) · [SNMP setup](docs/SNMP_SETUP.md) · [Automations](docs/AUTOMATIONS.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Full documentation index](docs/DOCUMENTATION_INDEX.md)
 
-A custom Home Assistant integration for monitoring and controlling Cisco Catalyst switches over SNMP.
+A Home Assistant Integration for monitoring compatible Cisco Catalyst switches over SNMP. It exposes switch and port devices, link and traffic diagnostics, PoE and administrative controls where supported and permitted, and information for automations. The optional [Cisco Catalyst Dashboard](https://github.com/WhoaLookAtThat/HA-Cisco-Catalyst-Dashboard) adds a Port Overview. Begin with the [Quick Start](docs/USER_GUIDE.md#install-and-get-started); detailed technical instructions follow below.
 
-The currently validated hardware/software target is a **Cisco Catalyst WS-C3650-48FS-S** running **Cisco IOS XE 16.06.08 / Everest 16.6.8 (fc3)** with the `CAT3K_CAA-UNIVERSALK9` image in INSTALL mode. Other Catalyst models or IOS/IOS-XE releases should be treated as unvalidated unless separately tested. The integration supports SNMPv2c and SNMPv3 authPriv, with optional SNMP trap/inform reception for immediate reconciliation.
 
 ## Features
 
@@ -75,7 +74,7 @@ This is a **supported-configuration requirement**, not an optional recommendatio
 
 The integration supports either SNMPv2c or SNMPv3.
 
-For SNMPv2c, configure separate read-only and read-write communities and restrict them with an ACL so only the Home Assistant host can reach them. SNMPv2c community strings are not encrypted.
+For SNMPv2c, you can configure separate read-only and read/write communities and optionally restrict them using an ACL configured on the Cisco switch. **The Integration does not configure switch ACLs.** See [SNMP setup and permissions](docs/SNMP_SETUP.md) for options and examples. SNMPv2c community strings are not encrypted.
 
 For SNMPv3, the configuration flow supports authenticated and encrypted USM access (authPriv) with SHA/SHA-256 authentication and AES-128 privacy. Use an IOS/IOS-XE SNMPv3 user whose views/permissions allow the MIB objects required by the features you intend to use.
 
@@ -281,3 +280,7 @@ Useful context for evaluating that contribution:
 - **Reproducibility:** source, tests, build/validation configuration, and distributable artifacts where applicable are kept in the repository so changes can be reviewed without requiring access to the original ChatGPT conversation.
 
 AI assistance does not imply endorsement, review, or support by OpenAI, Home Assistant, HACS, or Cisco.
+
+### Port IP address discovery
+
+Port diagnostics distinguish **learned endpoint IPs** (IPv4 addresses correlated using the switch's MAC-forwarding and ARP tables), **CDP neighbor IPs** (IPv4 addresses advertised by connected Cisco-discovery neighbors), and **observed port IPs** (unique addresses from either source). A port can have a learned MAC and a CDP-advertised IPv4 address while reporting zero ARP-correlated endpoint IPs. The Dashboard presents the same three source labels. See [Entity reference: per-port discovery](docs/ENTITIES.md#per-port-discovery-mac-addresses-ipv4-sources-and-poe). IPv6 and optional external inventory enrichments are separate future enhancements.
