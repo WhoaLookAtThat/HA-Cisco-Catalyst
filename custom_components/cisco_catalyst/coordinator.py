@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
 import re
@@ -323,6 +323,8 @@ class CatalystCoordinator(DataUpdateCoordinator[CatalystData]):
         )
         self.client = client
         self.write_enabled = write_enabled
+        # When the coordinator last finished a successful full read.
+        self.last_successful_poll_at: datetime | None = None
         # Serialize write/readback/refresh transactions so overlapping HA switch
         # services cannot publish mixed coordinator snapshots.
         self.write_lock = asyncio.Lock()
@@ -357,7 +359,9 @@ class CatalystCoordinator(DataUpdateCoordinator[CatalystData]):
     async def _async_update_data(self) -> CatalystData:
         """Serialize polling against SNMP write/readback transactions."""
         async with self.io_lock:
-            return await self._async_update_data_locked()
+            snapshot = await self._async_update_data_locked()
+            self.last_successful_poll_at = datetime.now(timezone.utc)
+            return snapshot
 
     async def _async_update_data_locked(self) -> CatalystData:
         try:
